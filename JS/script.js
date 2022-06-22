@@ -78,7 +78,7 @@ class ChessBoard{
         for(let i=0; i<2; i++){
             for(let c=0; c<2; c++){
                 this.pieces.push(new Rook(this.letters[0+i*7]+JSON.stringify(1+c*7),colors[c]))
-                //this.pieces.push(new Knight(this.letters[1+i*5]+JSON.stringify(1+c*7),colors[c]))
+                this.pieces.push(new Knight(this.letters[1+i*5]+JSON.stringify(1+c*7),colors[c]))
                 this.pieces.push(new Bishop(this.letters[2+i*3]+JSON.stringify(1+c*7),colors[c]))
             }
         }
@@ -224,8 +224,9 @@ class ChessBoard{
                     }
                 }
                 if(piece.moved == false){
-                    if(piece.color == 'white'){
-                        if(openSquares.find(s => s == 'f1')){
+                    const nums = [1,8]
+                    for(let i=0; i<2; i++){
+                        if(openSquares.find(s => s == 'f'+JSON.stringify(nums[i]))){
                             const pos = chessBoard.letters[index+2]+piece.pos.slice(1,2)
                             const square = chessBoard.pieces.find(p => p.pos == pos)
                             if(square == undefined){
@@ -236,7 +237,7 @@ class ChessBoard{
                                 }
                             }
                         }
-                        if(openSquares.find(s => s == 'd1')){
+                        if(openSquares.find(s => s == 'd'+JSON.stringify(nums[i]))){
                             const pos = chessBoard.letters[index-2]+piece.pos.slice(1,2)
                             const square = chessBoard.pieces.find(p => p.pos == pos)
                             if(square == undefined){
@@ -281,6 +282,18 @@ class ChessBoard{
                 }
                 return openSquares
             }
+            function N(){
+                const vars = [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]]
+                const openSquares = []
+                for(let i=0; i<vars.length; i++){
+                    const pos = chessBoard.letters[chessBoard.letters.findIndex(l => l == piece.pos.slice(0,1))+vars[i][0]]+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+vars[i][1])
+                    const square = chessBoard.pieces.find(p => p.pos == pos)
+                    if((square == undefined || square.color != piece.color) && chessBoard.squares.find(s => s == pos)){
+                        openSquares.push(pos)
+                    }
+                }
+                return openSquares
+            }
             if(piece.name == 'Rook' || piece.name == 'Queen'){
                 VH().filter(square => openSquares.push(square))
             }
@@ -292,6 +305,9 @@ class ChessBoard{
             }
             if(piece.name == 'Pawn'){
                 P().filter(s => openSquares.push(s))
+            }
+            if(piece.name == 'Knight'){
+                N().filter(m => openSquares.push(m))
             }
             for(let i=0; i<openSquares.length; i++){
                 const pos = this.convert(openSquares[i],0)
@@ -320,15 +336,18 @@ class ChessBoard{
             if(ifMoved != undefined){
                 this.selectedPiece.pos = ifMoved
                 if(this.selectedPiece.name == 'King' && this.selectedPiece.moved == false){
-                    if(ifMoved == 'g1'){
-                        const piece = this.pieces.find(p => p.pos == 'h1')
-                        piece.pos = 'f1'
-                        piece.moved = true
-                    }
-                    if(ifMoved == 'c1'){
-                        const piece = this.pieces.find(p => p.pos == 'a1')
-                        piece.pos = 'd1'
-                        piece.moved = true
+                    const nums = [1,8]
+                    for(let i=0; i<2; i++){
+                        if(ifMoved == 'g'+JSON.stringify(nums[i])){
+                            const piece = this.pieces.find(p => p.pos == 'h'+JSON.stringify(nums[i]))
+                            piece.pos = 'f'+JSON.stringify(nums[i])
+                            piece.moved = true
+                        }
+                        if(ifMoved == 'c'+JSON.stringify(nums[i])){
+                            const piece = this.pieces.find(p => p.pos == 'a'+JSON.stringify(nums[i]))
+                            piece.pos = 'd'+JSON.stringify(nums[i])
+                            piece.moved = true
+                        }
                     }
                 }
                 this.selectedPiece.moved = true
