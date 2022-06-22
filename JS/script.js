@@ -572,11 +572,12 @@ class ChessBoard{
                         if(p.name == 'Knight'){
                             Piece.N(p).filter(square => openSquares.push(square))
                         }
-                        for(let i=0; i<openSquares.length; i++){
-                            const k = this.pieces.find(pie => pie.pos == openSquares[i])
+                        for(let r=0; r<openSquares.length; r++){
+                            const k = this.pieces.find(pie => pie.pos == openSquares[r])
                             if(k != undefined && k.name == 'King'){
                                 this.check = k.color
                                 i=1000
+                                r=1000
                             }
                             else{
                                 this.check = undefined
