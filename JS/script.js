@@ -219,31 +219,33 @@ class Piece{
                     }
                 }
                 piece.pos = JSON.parse(savedPos)
-                const s = JSON.parse(savedPiece)
-                if(s.name == 'Bishop'){
-                    const n = new Bishop(s.pos,s.color)
-                    n.moved = s.moved
-                    chessBoard.pieces.push(n)
-                }
-                if(s.name == 'Pawn'){
-                    const n = new Pawn(s.pos,s.color)
-                    n.moved = s.moved
-                    chessBoard.pieces.push(n)
-                }
-                if(s.name == 'Rook'){
-                    const n = new Rook(s.pos,s.color)
-                    n.moved = s.moved
-                    chessBoard.pieces.push(n)
-                }
-                if(s.name == 'Queen'){
-                    const n = new Queen(s.pos,s.color)
-                    n.moved = s.moved
-                    chessBoard.pieces.push(n)
-                }
-                if(s.name == 'Knight'){
-                    const n = new Knight(s.pos,s.color)
-                    n.moved = s.moved
-                    chessBoard.pieces.push(n)
+                if(savedPiece != undefined){
+                    const s = JSON.parse(savedPiece)
+                    if(s.name == 'Bishop'){
+                        const n = new Bishop(s.pos,s.color)
+                        n.moved = s.moved
+                        chessBoard.pieces.push(n)
+                    }
+                    if(s.name == 'Pawn'){
+                        const n = new Pawn(s.pos,s.color)
+                        n.moved = s.moved
+                        chessBoard.pieces.push(n)
+                    }
+                    if(s.name == 'Rook'){
+                        const n = new Rook(s.pos,s.color)
+                        n.moved = s.moved
+                        chessBoard.pieces.push(n)
+                    }
+                    if(s.name == 'Queen'){
+                        const n = new Queen(s.pos,s.color)
+                        n.moved = s.moved
+                        chessBoard.pieces.push(n)
+                    }
+                    if(s.name == 'Knight'){
+                        const n = new Knight(s.pos,s.color)
+                        n.moved = s.moved
+                        chessBoard.pieces.push(n)
+                    }
                 }
             }
             return openSquares
@@ -449,11 +451,13 @@ class ChessBoard{
                     Piece.N(piece).filter(square => openSquares.push(square))
                 }
                 this.possibilities = openSquares
+                console.log(openSquares,piece)
             }
             else{
                 this.possibilities = Piece.ifCheck(this.selectedPiece)
             }
         }
+        console.log(this.possibilities)
         for(let i=0; i<this.possibilities.length; i++){
             const pos = this.convert(this.possibilities[i],0)
             ctx.beginPath()
@@ -526,6 +530,9 @@ class ChessBoard{
                     const k = this.pieces.find(pie => pie.pos == openSquares[i])
                     if(k != undefined && k.name == 'King'){
                         this.check = k.color
+                    }
+                    else{
+                        this.check = undefined
                     }
                 }
             }
