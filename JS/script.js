@@ -138,6 +138,39 @@ class Piece{
                 }
             }
         }
+        for(let i=0; i<openSquares.length; i++){
+            const s = openSquares[i]
+            const found = chessBoard.pieces.find(p => p.pos == s && p != piece)
+            if(found != undefined){
+                chessBoard.pieces.splice(chessBoard.pieces.findIndex(p => p == found),1)
+            }
+            for(let l=0; l<chessBoard.pieces.length; l++){
+                const p = chessBoard.pieces[l]
+                if(p.color != piece.color){
+                    const os = []
+                    if(p.name == 'Rook' || p.name == 'Queen'){
+                        Piece.VH(p).filter(square => os.push(square))
+                    }
+                    if(p.name == 'Bishop' || p.name == 'Queen'){
+                        Piece.D(p).filter(square => os.push(square))
+                    }
+                    if(p.name == 'Pawn'){
+                        Piece.P(p).filter(square => os.push(square))
+                    }
+                    if(p.name == 'Knight'){
+                        Piece.N(p).filter(square => os.push(square))
+                    }
+                    for(let r=0; r<os.length; r++){
+                        if(os[r] == s){
+                            openSquares.splice(i,1)
+                        }
+                    }
+                }
+            }
+            if(found != undefined){
+                chessBoard.pieces.push(found)
+            }
+        }
         return openSquares
     }
     static P(piece){
@@ -272,6 +305,10 @@ class Piece{
                 const k = chessBoard.pieces.find(ki => ki.color == chessBoard.check && ki.name == 'King')
                 for(let r=0; r<openSquares.length; r++){
                     const savedPos = JSON.stringify(p.pos)
+                    const savedPiece = chessBoard.pieces.find(pie => pie.pos == openSquares[r] && pie.name == 'Knight')
+                    if(savedPiece != undefined){
+                        chessBoard.pieces.splice(chessBoard.pieces.findIndex(pi => pi == savedPiece),1)
+                    }
                     p.pos = openSquares[r]
                     for(let l=0; l<chessBoard.pieces.length; l++){
                         if(chessBoard.pieces[l].color != chessBoard.check){
@@ -299,6 +336,9 @@ class Piece{
                                 }
                             }
                         }
+                    }
+                    if(savedPiece != undefined){
+                        chessBoard.pieces.push(savedPiece)
                     }
                     p.pos = JSON.parse(savedPos)
 
@@ -451,13 +491,11 @@ class ChessBoard{
                     Piece.N(piece).filter(square => openSquares.push(square))
                 }
                 this.possibilities = openSquares
-                console.log(openSquares,piece)
             }
             else{
                 this.possibilities = Piece.ifCheck(this.selectedPiece)
             }
         }
-        console.log(this.possibilities)
         for(let i=0; i<this.possibilities.length; i++){
             const pos = this.convert(this.possibilities[i],0)
             ctx.beginPath()
@@ -504,9 +542,15 @@ class ChessBoard{
                     this.pieces.splice(index,1)
                 }
                 if(this.turn == 'white'){
+                    if(this.check == 'white'){
+                        this.check = undefined
+                    }
                     this.turn = 'black'
                 }
                 else{
+                    if(this.check == 'black'){
+                        this.check = undefined
+                    }
                     this.turn = 'white'
                 }
                 const p = this.selectedPiece
@@ -530,6 +574,7 @@ class ChessBoard{
                     const k = this.pieces.find(pie => pie.pos == openSquares[i])
                     if(k != undefined && k.name == 'King'){
                         this.check = k.color
+                        i=1000
                     }
                     else{
                         this.check = undefined
