@@ -553,31 +553,35 @@ class ChessBoard{
                     }
                     this.turn = 'white'
                 }
-                const p = this.selectedPiece
-                const openSquares = []
-                if(p.name == 'Rook' || p.name == 'Queen'){
-                    Piece.VH(p).filter(square => openSquares.push(square))
-                }
-                if(p.name == 'Bishop' || p.name == 'Queen'){
-                    Piece.D(p).filter(square => openSquares.push(square))
-                }
-                if(p.name == 'King'){
-                    Piece.K(p).filter(square => openSquares.push(square))
-                }
-                if(p.name == 'Pawn'){
-                    Piece.P(p).filter(square => openSquares.push(square))
-                }
-                if(p.name == 'Knight'){
-                    Piece.N(p).filter(square => openSquares.push(square))
-                }
-                for(let i=0; i<openSquares.length; i++){
-                    const k = this.pieces.find(pie => pie.pos == openSquares[i])
-                    if(k != undefined && k.name == 'King'){
-                        this.check = k.color
-                        i=1000
-                    }
-                    else{
-                        this.check = undefined
+                for(let i=0; i<this.pieces.length; i++){
+                    const p = this.pieces[i]
+                    if(p.color != this.turn){
+                        const openSquares = []
+                        if(p.name == 'Rook' || p.name == 'Queen'){
+                            Piece.VH(p).filter(square => openSquares.push(square))
+                        }
+                        if(p.name == 'Bishop' || p.name == 'Queen'){
+                            Piece.D(p).filter(square => openSquares.push(square))
+                        }
+                        if(p.name == 'King'){
+                            Piece.K(p).filter(square => openSquares.push(square))
+                        }
+                        if(p.name == 'Pawn'){
+                            Piece.P(p).filter(square => openSquares.push(square))
+                        }
+                        if(p.name == 'Knight'){
+                            Piece.N(p).filter(square => openSquares.push(square))
+                        }
+                        for(let i=0; i<openSquares.length; i++){
+                            const k = this.pieces.find(pie => pie.pos == openSquares[i])
+                            if(k != undefined && k.name == 'King'){
+                                this.check = k.color
+                                i=1000
+                            }
+                            else{
+                                this.check = undefined
+                            }
+                        }
                     }
                 }
             }
