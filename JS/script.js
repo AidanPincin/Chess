@@ -321,7 +321,7 @@ class Piece{
                 const k = chessBoard.pieces.find(ki => ki.color == chessBoard.check && ki.name == 'King')
                 for(let r=0; r<openSquares.length; r++){
                     const savedPos = JSON.stringify(p.pos)
-                    const savedPiece = chessBoard.pieces.find(pie => pie.pos == openSquares[r] && pie.name == 'Knight')
+                    const savedPiece = chessBoard.pieces.find(pie => pie.pos == openSquares[r])
                     if(savedPiece != undefined){
                         chessBoard.pieces.splice(chessBoard.pieces.findIndex(pi => pi == savedPiece),1)
                     }
