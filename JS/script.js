@@ -160,6 +160,22 @@ class Piece{
                     if(p.name == 'Knight'){
                         Piece.N(p).filter(square => os.push(square))
                     }
+                    if(p.name == 'Pawn'){
+                        for(let r=0; r<os.length; r++){
+                            if(os[r].slice(0,1) == p.pos.slice(0,1)){
+                                os.splice(r,1)
+                                r-=1
+                            }
+                        }
+                        for(let r=0; r<2; r++){
+                            const index = chessBoard.letters.findIndex(letter => letter == p.pos.slice(0,1))
+                            const colors = ['white','black']
+                            const pos = chessBoard.letters[index+1-r*2]+JSON.stringify(JSON.parse(p.pos.slice(1,2))+1-(2*colors.findIndex(c => c == p.color)))
+                            if(chessBoard.squares.find(sq => sq == pos)){
+                                os.push(pos)
+                            }
+                        }
+                    }
                     for(let r=0; r<os.length; r++){
                         if(os[r] == s){
                             openSquares.splice(i,1)
