@@ -77,6 +77,16 @@ class Piece{
                 openSquares.push(pos)
             }
         }
+        const enPassants = chessBoard.pieces.filter(p => p.color != piece.color && p.enPassant == true)
+        for(let i=0; i<enPassants.length; i++){
+            const p = enPassants[i]
+            const dif = chessBoard.letters.findIndex(l => l == p.pos.slice(0,1))-chessBoard.letters.findIndex(l => l == piece.pos.slice(0,1))
+            if(piece.pos.slice(1,2) == p.pos.slice(1,2) && (dif == -1 || dif == 1)){
+                const colors = ['black','white']
+                const pos = p.pos.slice(0,1)+JSON.stringify(JSON.parse(p.pos.slice(1,2))+1-2*colors.findIndex(c => c == p.color))
+                openSquares.push(pos)
+            }
+        }
         return openSquares
     }
     static N(piece){
@@ -213,6 +223,7 @@ class Pawn extends Piece{
     constructor(pos,color){
         super(pos,color)
         this.name = 'Pawn'
+        this.enPassant = false
     }
 }
 class Bishop extends Piece{
@@ -388,6 +399,21 @@ class ChessBoard{
                             piece.moved = true
                         }
                     }
+                }
+                if(this.selectedPiece.name == 'Pawn'){
+                    const colors = ['white','black']
+                    const p1 = this.selectedPiece
+                    const p = chessBoard.pieces.find(p => p.color != p1.color && p.pos == p1.pos.slice(0,1)+JSON.stringify(JSON.parse(p1.pos.slice(1,2))+1-2*colors.findIndex(c => c == p.color)))
+                    if(p != undefined && p.enPassant == true){
+                        chessBoard.pieces.splice(chessBoard.pieces.findIndex(p2 => p2 == p),1)
+                    }
+                }
+                this.pieces.filter(p => p.name == 'Pawn').enPassant = false
+                if(this.selectedPiece.name == 'Pawn' && this.selectedPiece.moved == false){
+                    if((this.selectedPiece.color == 'white' && JSON.parse(this.selectedPiece.pos.slice(1,2)) == 4) || (this.selectedPiece.color == 'black' && JSON.parse(this.selectedPiece.pos.slice(1,2)) == 5)){
+                        this.selectedPiece.enPassant = true
+                    }
+                    
                 }
                 this.selectedPiece.moved = true
                 if(this.pieces.find(p => p.pos == this.selectedPiece.pos && p != this.selectedPiece)){
