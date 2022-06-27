@@ -12,21 +12,110 @@ class Piece{
         const { x: x, width: w, y: y, height: h } = chessBoard
         ctx.drawImage(grabImage(this.color+this.name),x+pos.col*w/8,y+pos.row*h/8,w/8,h/8)
     }
+    static K(piece){
+        const vars = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
+        const openSquares = []
+        for(let i=0; i<vars.length; i++){
+            const index = chessBoard.letters.findIndex(letter => letter == piece.pos.slice(0,1))
+            const pos = chessBoard.letters[index+vars[i][0]]+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+vars[i][1])
+            if(chessBoard.squares.find(s => s == pos) != undefined){
+                const p = chessBoard.pieces.find(p => p.pos == pos)
+                if(p != undefined){
+                    if(p.color != piece.color){
+                        openSquares.push(pos)
+                    }
+                }
+                else{
+                    openSquares.push(pos)
+                }
+            }
+        }
+        const vs = [[3,1],[4,-1]]
+        const index = chessBoard.letters.findIndex(l => l == piece.pos.slice(0,1))
+        const num = piece.pos.slice(1,2)
+        for(let l=0; l<2; l++){
+            for(let i=1; i<=vs[l][0]; i++){
+                if(piece.moved == false){
+                    const p = chessBoard.pieces.find(p => p.pos == chessBoard.letters[index+i*vs[l][1]]+num)
+                    if(i<vs[l][0]){
+                        if(p != undefined){
+                            i = 10
+                        }
+                    }
+                    else{
+                        if(p != undefined && p.moved == false){
+                            openSquares.push(chessBoard.letters[index+2*vs[l][1]]+num)
+                        }
+                    }
+                }
+            }
+        }
+        return openSquares
+    }
+    static P(piece){
+        let l = 1
+        const openSquares = []
+        const colors = ['white','black']
+        if(piece.moved == false){
+            l = 2
+        }
+        for(let i=1; i<l+1; i++){
+            const pos = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+i-colors.findIndex(c => c == piece.color)*i*2)
+            if(chessBoard.squares.find(s => s == pos)){
+                const p = chessBoard.pieces.find(p => p.pos == pos)
+                if(p == undefined){
+                    openSquares.push(pos)
+                }
+            }
+        }
+        const vars = [-1,1]
+        for(let i=0; i<vars.length; i++){
+            const letter = chessBoard.letters[chessBoard.letters.findIndex(letter => letter == piece.pos.slice(0,1))+vars[i]]
+            const pos = letter+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+1-2*colors.findIndex(c => c == piece.color))
+            const p = chessBoard.pieces.find(p => p.pos == pos)
+            if(p != undefined && p.color != piece.color){
+                openSquares.push(pos)
+            }
+        }
+        return openSquares
+    }
+    static N(piece){
+        const openSquares = []
+        const vars = [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]]
+        for(let i=0; i<vars.length; i++){
+            const letter = chessBoard.letters[chessBoard.letters.findIndex(letter => letter == piece.pos.slice(0,1))+vars[i][0]]
+            const num = JSON.stringify(JSON.parse(piece.pos.slice(1,2))+vars[i][1])
+            const pos = letter+num
+            if(chessBoard.squares.find(s => s == pos)){
+                const p = chessBoard.pieces.find(p => p.pos == pos)
+                if(p != undefined){
+                    if(p.color != piece.color){
+                        openSquares.push(pos)
+                    }
+                }
+                else{
+                    openSquares.push(pos)
+                }
+            }
+        }
+        return openSquares
+    }
     static D(piece){
         const openSquares = []
-        const index = chessBoard.letters.findIndex(letter => piece.pos.slice(0,1) == letter)
-        const num = JSON.parse(piece.pos.slice(1,2))
-        const vars = [[1,1],[1,-1],[-1,-1],[-1,1]]
-        for(let r=0; r<4; r++){
+        const vars = [[1,1],[-1,-1],[-1,1],[1,-1]]
+        for(let l=0; l<vars.length; l++){
             for(let i=1; i<8; i++){
-                const pos = chessBoard.letters[index+i*vars[r][0]]+JSON.stringify(num+i*vars[r][1])
-                if(chessBoard.squares.find(s => s == pos)){
-                    const square = chessBoard.pieces.find(p => p.pos == pos)
-                    if(square != undefined){
-                        if(square.color != piece.color){
+                const letter = chessBoard.letters[chessBoard.letters.findIndex(letter => letter == piece.pos.slice(0,1))+i*vars[l][0]]
+                const num = JSON.stringify(JSON.parse(piece.pos.slice(1,2))+i*vars[l][1])
+                const pos = letter+num
+                const square = chessBoard.squares.find(s => s == pos)
+                if(square != undefined){
+                    const p = chessBoard.pieces.find(p => p.pos == pos)
+                    if(p != undefined){
+                        if(p.color != piece.color){
                             openSquares.push(pos)
                         }
-                        i = 10
+                        i=10
                     }
                     else{
                         openSquares.push(pos)
@@ -38,333 +127,86 @@ class Piece{
     }
     static VH(piece){
         const openSquares = []
-        const index = chessBoard.letters.findIndex(letter => piece.pos.slice(0,1) == letter)
-        for(let i=1; i<chessBoard.letters.length-index; i++){
-            const pos = chessBoard.letters[index+i]+piece.pos.slice(1,2)
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if(square != undefined){
-                if(square.color != piece.color){
-                    openSquares.push(pos)
-                }
-                i = 10
-            }
-            else{
-                openSquares.push(pos)
-            }
-        }
-        for(let i=1; i<=index; i++){
-            const pos = chessBoard.letters[index-i]+piece.pos.slice(1,2)
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if(square != undefined){
-                if(square.color != piece.color){
-                    openSquares.push(pos)
-                }
-                i = 10
-            }
-            else{
-                openSquares.push(pos)
-            }
-        }
-        for(let i=1; i<=8-JSON.parse(piece.pos.slice(1,2)); i++){
-            const pos = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+i)
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if(square != undefined){
-                if(square.color != piece.color){
-                    openSquares.push(pos)
-                }
-                i = 10
-            }
-            else{
-                openSquares.push(pos)
-            }
-        }
-        for(let i=1; i<JSON.parse(piece.pos.slice(1,2)); i++){
-            const pos = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))-i)
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if(square != undefined){
-                if(square.color != piece.color){
-                    openSquares.push(pos)
-                }
-                i = 10
-            }
-            else{
-                openSquares.push(pos)
-            }
-        }
-        return openSquares
-    }
-    static K(piece){
-        const index = chessBoard.letters.findIndex(letter => piece.pos.slice(0,1) == letter)
-        const openSquares = []
-        const vars = [[0,1],[0,-1],[-1,0],[1,0],[1,1],[-1,-1],[-1,1],[1,-1]]
-        for(let i=0; i<vars.length; i++){
-            const pos = chessBoard.letters[index+vars[i][0]]+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+vars[i][1])
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if(square == undefined && chessBoard.squares.find(s => s == pos)){
-                openSquares.push(pos)
-            }
-            else if(chessBoard.squares.find(s => s == pos) && square.color != piece.color){
-                openSquares.push(pos)
-            }
-        }
-        if(piece.moved == false){
-            const nums = [1,8]
-            for(let i=0; i<2; i++){
-                if(openSquares.find(s => s == 'f'+JSON.stringify(nums[i]))){
-                    const pos = chessBoard.letters[index+2]+piece.pos.slice(1,2)
-                    const square = chessBoard.pieces.find(p => p.pos == pos)
-                    if(square == undefined){
-                        const pos1 = chessBoard.letters[index+3]+piece.pos.slice(1,2)
-                        const square1 = chessBoard.pieces.find(p => p.pos == pos1)
-                        if(square1 != undefined && square1.name == 'Rook' && square1.moved == false){
+        const vars = [[1,0],[-1,0],[0,1],[0,-1]]
+        for(let l=0; l<vars.length; l++){
+            for(let i=1; i<8; i++){
+                const letter = chessBoard.letters[chessBoard.letters.findIndex(letter => letter == piece.pos.slice(0,1))+i*vars[l][1]]
+                const number = JSON.stringify(JSON.parse(piece.pos.slice(1,2))+i*vars[l][0])
+                const pos = letter+number
+                if(chessBoard.squares.find(s => s == pos) != undefined){
+                    const p = chessBoard.pieces.find(p => p.pos == pos)
+                    if(p != undefined){
+                        if(p.color != piece.color){
                             openSquares.push(pos)
                         }
+                        i=10
                     }
-                }
-                if(openSquares.find(s => s == 'd'+JSON.stringify(nums[i]))){
-                    const pos = chessBoard.letters[index-2]+piece.pos.slice(1,2)
-                    const square = chessBoard.pieces.find(p => p.pos == pos)
-                    if(square == undefined){
-                        const pos1 = chessBoard.letters[index-3]+piece.pos.slice(1,2)
-                        const square1 = chessBoard.pieces.find(p => p.pos == pos1)
-                        if(square1 == undefined){
-                            const pos2 = chessBoard.letters[index-4]+piece.pos.slice(1,2)
-                            const square2 = chessBoard.pieces.find(p => p.pos == pos2)
-                            if(square2 != undefined && square2.name == 'Rook' && square2.moved == false){
-                                openSquares.push(pos)
-                            }
-                        }
+                    else{
+                        openSquares.push(pos)
                     }
                 }
             }
         }
-        for(let i=0; i<openSquares.length; i++){
-            const s = openSquares[i]
-            const found = chessBoard.pieces.find(p => p.pos == s && p != piece)
-            if(found != undefined){
-                chessBoard.pieces.splice(chessBoard.pieces.findIndex(p => p == found),1)
-            }
-            for(let l=0; l<chessBoard.pieces.length; l++){
-                const p = chessBoard.pieces[l]
-                if(p.color != piece.color){
-                    const os = []
-                    if(p.name == 'Rook' || p.name == 'Queen'){
-                        Piece.VH(p).filter(square => os.push(square))
-                    }
-                    if(p.name == 'Bishop' || p.name == 'Queen'){
-                        Piece.D(p).filter(square => os.push(square))
-                    }
-                    if(p.name == 'Pawn'){
-                        Piece.P(p).filter(square => os.push(square))
-                    }
-                    if(p.name == 'Knight'){
-                        Piece.N(p).filter(square => os.push(square))
-                    }
-                    if(p.name == 'Pawn'){
-                        for(let r=0; r<os.length; r++){
-                            if(os[r].slice(0,1) == p.pos.slice(0,1)){
-                                os.splice(r,1)
-                                r-=1
-                            }
-                        }
-                        for(let r=0; r<2; r++){
-                            const index = chessBoard.letters.findIndex(letter => letter == p.pos.slice(0,1))
-                            const colors = ['white','black']
-                            const pos = chessBoard.letters[index+1-r*2]+JSON.stringify(JSON.parse(p.pos.slice(1,2))+1-(2*colors.findIndex(c => c == p.color)))
-                            if(chessBoard.squares.find(sq => sq == pos)){
-                                os.push(pos)
-                            }
-                        }
-                    }
-                    for(let r=0; r<os.length; r++){
-                        if(os[r] == s){
-                            openSquares.splice(i,1)
-                        }
-                    }
-                }
-            }
-            if(found != undefined){
-                chessBoard.pieces.push(found)
-            }
-        }
         return openSquares
     }
-    static P(piece){
-        const openSquares = []
-        let moves = 1
-        if(piece.moved == false){
-            moves = 2
-        }
-        let mult = 1
-        if(piece.color == 'black'){
-            mult = -1
-        }
-        for(let i=1; i<1+moves; i++){
-            const pos = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+i*mult)
-            const p = chessBoard.pieces.find(pi => pi.pos == pos)
-            if(p == undefined){
-                openSquares.push(pos)
-            }
-        }
-        for(let i=0; i<2; i++){
-            const pos = chessBoard.letters[chessBoard.letters.findIndex(p => p == piece.pos.slice(0,1))-1+i*2]+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+1*mult)
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if(square != undefined && square.color != piece.color){
-                openSquares.push(pos)
-            }
-        }
-        return openSquares
-    }
-    static N(piece){
-        const vars = [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]]
-        const openSquares = []
-        for(let i=0; i<vars.length; i++){
-            const pos = chessBoard.letters[chessBoard.letters.findIndex(l => l == piece.pos.slice(0,1))+vars[i][0]]+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+vars[i][1])
-            const square = chessBoard.pieces.find(p => p.pos == pos)
-            if((square == undefined || square.color != piece.color) && chessBoard.squares.find(s => s == pos)){
-                openSquares.push(pos)
-            }
-        }
-        return openSquares
-    }
-    static ifCheck(piece){
-        let poss = undefined
-        if(piece.name == 'King'){
-            const openSquares = Piece.K(piece)
-            for(let i=0; i<openSquares.length; i++){
+    static ifCheck(piece,which=1,openSquares=undefined){
+        const c = piece.color
+        if(which == 0){
+            const os = openSquares
+            const k = chessBoard.pieces.find(p => p.name == 'King' && p.color == piece.color)
+            for(let i=0; i<os.length; i++){
                 const savedPos = JSON.stringify(piece.pos)
-                piece.pos = openSquares[i]
-                const found = chessBoard.pieces.find(p => p.pos == piece.pos && p != piece)
-                let savedPiece = undefined
-                if(found != undefined){
-                    savedPiece = JSON.stringify(found)
-                    chessBoard.pieces.splice(chessBoard.pieces.findIndex(p => p == found),1)
+                const p1 = chessBoard.pieces.find(p => p.pos == os[i])
+                const savedPiece = JSON.stringify(p1)
+                if(p1 != undefined){
+                    chessBoard.pieces.splice(chessBoard.pieces.findIndex(p => p == p1),1)
                 }
-                for(let l=0; l<chessBoard.pieces.length; l++){
-                    const p = chessBoard.pieces[l]
-                    if(p.color != chessBoard.check){
-                        const os = []
-                        if(p.name == 'Rook' || p.name == 'Queen'){
-                            Piece.VH(p).filter(square => os.push(square))
-                        }
-                        if(p.name == 'Bishop' || p.name == 'Queen'){
-                            Piece.D(p).filter(square => os.push(square))
-                        }
-                        if(p.name == 'King'){
-                            Piece.K(p).filter(square => os.push(square))
-                        }
-                        if(p.name == 'Pawn'){
-                            Piece.P(p).filter(square => os.push(square))
-                        }
-                        if(p.name == 'Knight'){
-                            Piece.N(p).filter(square => os.push(square))
-                        }
-                        for(let r=0; r<os.length; r++){
-                            if(os[r] == piece.pos){
-                                openSquares.splice(i,1)
-                                i-=1
-                            }
-                        }
-                    }
+                piece.pos = os[i]
+                const check = Piece.ifCheck(k)
+                if(check != undefined){
+                    os.splice(i,1)
+                    i-=1
                 }
                 piece.pos = JSON.parse(savedPos)
-                if(savedPiece != undefined){
-                    const s = JSON.parse(savedPiece)
-                    if(s.name == 'Bishop'){
-                        const n = new Bishop(s.pos,s.color)
-                        n.moved = s.moved
-                        chessBoard.pieces.push(n)
-                    }
-                    if(s.name == 'Pawn'){
-                        const n = new Pawn(s.pos,s.color)
-                        n.moved = s.moved
-                        chessBoard.pieces.push(n)
-                    }
-                    if(s.name == 'Rook'){
-                        const n = new Rook(s.pos,s.color)
-                        n.moved = s.moved
-                        chessBoard.pieces.push(n)
-                    }
-                    if(s.name == 'Queen'){
-                        const n = new Queen(s.pos,s.color)
-                        n.moved = s.moved
-                        chessBoard.pieces.push(n)
-                    }
-                    if(s.name == 'Knight'){
-                        const n = new Knight(s.pos,s.color)
-                        n.moved = s.moved
-                        chessBoard.pieces.push(n)
-                    }
+                if(p1 != undefined){
+                    const p2 = JSON.parse(savedPiece)
+                    const { name: n, pos: pos, moved: m, color: c } = p2
+                    const p3 = new Piece(pos,c)
+                    p3.name = n
+                    p3.moved = m
+                    chessBoard.pieces.push(p3)
                 }
             }
-            return openSquares
+            return os
         }
-        for(let i=0; i<chessBoard.pieces.length; i++){
-            if(chessBoard.pieces[i].color == chessBoard.check){
-                const p = chessBoard.pieces[i]
-                const openSquares = []
-                if(p.name == 'Rook' || p.name == 'Queen'){
-                    Piece.VH(p).filter(square => openSquares.push(square))
-                }
-                if(p.name == 'Bishop' || p.name == 'Queen'){
-                    Piece.D(p).filter(square => openSquares.push(square))
-                }
+        else{
+            const opPieces = chessBoard.pieces.filter(p => p.color != c)
+            const os = []
+            for(let i=0; i<opPieces.length; i++){
+                const p = opPieces[i]
                 if(p.name == 'King'){
-                    Piece.K(p).filter(square => openSquares.push(square))
+                    Piece.K(p).filter(s => os.push(s))
                 }
                 if(p.name == 'Pawn'){
-                    Piece.P(p).filter(square => openSquares.push(square))
+                    Piece.P(p).filter(s => os.push(s))
                 }
                 if(p.name == 'Knight'){
-                    Piece.N(p).filter(square => openSquares.push(square))
+                    Piece.N(p).filter(s => os.push(s))
                 }
-                const k = chessBoard.pieces.find(ki => ki.color == chessBoard.check && ki.name == 'King')
-                for(let r=0; r<openSquares.length; r++){
-                    const savedPos = JSON.stringify(p.pos)
-                    const savedPiece = chessBoard.pieces.find(pie => pie.pos == openSquares[r])
-                    if(savedPiece != undefined){
-                        chessBoard.pieces.splice(chessBoard.pieces.findIndex(pi => pi == savedPiece),1)
-                    }
-                    p.pos = openSquares[r]
-                    for(let l=0; l<chessBoard.pieces.length; l++){
-                        if(chessBoard.pieces[l].color != chessBoard.check){
-                            const p1 = chessBoard.pieces[l]
-                            const openSquares1 = []
-                            if(p1.name == 'Rook' || p1.name == 'Queen'){
-                                Piece.VH(p1).filter(square => openSquares1.push(square))
-                            }
-                            if(p1.name == 'Bishop' || p1.name == 'Queen'){
-                                Piece.D(p1).filter(square => openSquares1.push(square))
-                            }
-                            if(p1.name == 'King'){
-                                Piece.K(p1).filter(square => openSquares1.push(square))
-                            }
-                            if(p1.name == 'Pawn'){
-                                Piece.P(p1).filter(square => openSquares1.push(square))
-                            }
-                            if(p1.name == 'Knight'){
-                                Piece.N(p1).filter(square => openSquares1.push(square))
-                            }
-                            for(let y=0; y<openSquares1.length; y++){
-                                if(openSquares1[y] == k.pos){
-                                    openSquares.splice(r,1)
-                                    r-=1
-                                }
-                            }
-                        }
-                    }
-                    if(savedPiece != undefined){
-                        chessBoard.pieces.push(savedPiece)
-                    }
-                    p.pos = JSON.parse(savedPos)
-
+                if(p.name == 'Bishop' || p.name == 'Queen'){
+                    Piece.D(p).filter(s => os.push(s))
                 }
-                if(p == piece){
-                    poss = openSquares
+                if(p.name == 'Rook' || p.name == 'Queen'){
+                    Piece.VH(p).filter(s => os.push(s))
+                }
+            }
+            for(let i=0; i<os.length; i++){
+                if(os[i] == piece.pos){
+                    return c
                 }
             }
         }
-        return poss
+        return undefined
     }
 }
 class Pawn extends Piece{
@@ -487,37 +329,32 @@ class ChessBoard{
             ctx.lineTo(x,y)
             ctx.stroke()
         }
-        if(this.selectedPiece != undefined && this.selectedPiece.color == this.turn){
-            if(this.check == undefined){
-                const piece = this.selectedPiece
-                const openSquares = []
-                if(piece.name == 'Rook' || piece.name == 'Queen'){
-                    Piece.VH(piece).filter(square => openSquares.push(square))
-                }
-                if(piece.name == 'Bishop' || piece.name == 'Queen'){
-                    Piece.D(piece).filter(square => openSquares.push(square))
-                }
-                if(piece.name == 'King'){
-                    Piece.K(piece).filter(square => openSquares.push(square))
-                }
-                if(piece.name == 'Pawn'){
-                    Piece.P(piece).filter(square => openSquares.push(square))
-                }
-                if(piece.name == 'Knight'){
-                    Piece.N(piece).filter(square => openSquares.push(square))
-                }
-                this.possibilities = openSquares
-            }
-            else{
-                this.possibilities = Piece.ifCheck(this.selectedPiece)
-            }
-        }
         for(let i=0; i<this.possibilities.length; i++){
             const pos = this.convert(this.possibilities[i],0)
             ctx.beginPath()
             ctx.arc(this.x+(pos.col+0.5)*this.width/8,this.y+(pos.row+0.5)*this.height/8,10,0,Math.PI*2,false)
             ctx.fillStyle = '#00ff00'
             ctx.fill()
+        }
+        this.possibilities = []
+        if(this.selectedPiece != undefined && this.turn == this.selectedPiece.color){
+            const p = this.selectedPiece
+            if(p.name == 'King'){
+                Piece.K(p).filter(s => this.possibilities.push(s))
+            }
+            if(p.name == 'Pawn'){
+                Piece.P(p).filter(s => this.possibilities.push(s))
+            }
+            if(p.name == 'Knight'){
+                Piece.N(p).filter(s => this.possibilities.push(s))
+            }
+            if(p.name == 'Bishop' || p.name == 'Queen'){
+                Piece.D(p).filter(s => this.possibilities.push(s))
+            }
+            if(p.name == 'Rook' || p.name == 'Queen'){
+                Piece.VH(p).filter(s => this.possibilities.push(s))
+            }
+            this.possibilities = Piece.ifCheck(this.selectedPiece,0,this.possibilities)
         }
     }
     wasClicked(e){
@@ -569,38 +406,7 @@ class ChessBoard{
                     }
                     this.turn = 'white'
                 }
-                for(let i=0; i<this.pieces.length; i++){
-                    const p = this.pieces[i]
-                    if(p.color != this.turn){
-                        const openSquares = []
-                        if(p.name == 'Rook' || p.name == 'Queen'){
-                            Piece.VH(p).filter(square => openSquares.push(square))
-                        }
-                        if(p.name == 'Bishop' || p.name == 'Queen'){
-                            Piece.D(p).filter(square => openSquares.push(square))
-                        }
-                        if(p.name == 'King'){
-                            Piece.K(p).filter(square => openSquares.push(square))
-                        }
-                        if(p.name == 'Pawn'){
-                            Piece.P(p).filter(square => openSquares.push(square))
-                        }
-                        if(p.name == 'Knight'){
-                            Piece.N(p).filter(square => openSquares.push(square))
-                        }
-                        for(let r=0; r<openSquares.length; r++){
-                            const k = this.pieces.find(pie => pie.pos == openSquares[r])
-                            if(k != undefined && k.name == 'King'){
-                                this.check = k.color
-                                i=1000
-                                r=1000
-                            }
-                            else{
-                                this.check = undefined
-                            }
-                        }
-                    }
-                }
+                this.check = Piece.ifCheck(this.pieces.find(p => p.name == 'King' && p.color == this.turn))
             }
             else{
                 this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
