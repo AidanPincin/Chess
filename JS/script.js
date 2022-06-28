@@ -260,47 +260,7 @@ class Rook extends Piece{
 }
 class ChessBoard{
     constructor(players=1){
-        this.AIs = [new AI('white'), new AI('black')]
         this.players = players
-        this.blackWins = 0
-        this.whiteWins = 0
-        this.stalemates = 0
-        if(players == 0){
-            setInterval(() => {
-                if(chessBoard.checkmate == undefined){
-                    try{
-                        if(chessBoard.turn == 'white'){
-                            chessBoard.AIs[0].play()
-                        }
-                        else{
-                            chessBoard.AIs[1].play()
-                        }
-                    }
-                    catch{
-                        chessBoard.stalemates += 1
-                        chessBoard.createPieces()
-                    }
-                    if(chessBoard.pieces.length == 2){
-                        chessBoard.stalemates += 1
-                        chessBoard.createPieces()
-                    }
-                }
-                else{
-                    if(chessBoard.check == 'white'){
-                        chessBoard.whiteWins += 1
-                    }
-                    else{
-                        chessBoard.blackWins += 1
-                    }
-                    chessBoard.createPieces()
-                    chessBoard.checkmate = undefined
-                    chessBoard.check = undefined
-                }
-            },150)
-            setInterval(() => {
-                console.log('Wins: '+Math.round(chessBoard.whiteWins+chessBoard.blackWins)+' -- Black: '+chessBoard.blackWins+'  White: '+chessBoard.whiteWins+'   Stalemates: '+chessBoard.stalemates)
-            },5000)
-        }
         this.check = undefined
         this.turn = 'white'
         this.possibilities = []
@@ -461,11 +421,6 @@ class ChessBoard{
                     this.checkmate = Piece.ifCheckmate(this.check)
                 }
                 this.selectedPiece = undefined
-                if(this.turn == this.Ais[1].color && this.checkmate == undefined && this.players == 1){
-                    setTimeout(() => {
-                        this.AIs[1].play()
-                    },1000)
-                }
             }
             else{
                 this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
@@ -514,7 +469,7 @@ class ChessBoard{
         }
         const colors = ['white','black']
         for(let i=0; i<2; i++){
-            for(let c=0; c<2; c++){
+            for(let c=0; c<colors.length; c++){
                 this.pieces.push(new Rook(this.letters[0+i*7]+JSON.stringify(1+c*7),colors[c]))
                 this.pieces.push(new Knight(this.letters[1+i*5]+JSON.stringify(1+c*7),colors[c]))
                 this.pieces.push(new Bishop(this.letters[2+i*3]+JSON.stringify(1+c*7),colors[c]))
@@ -526,64 +481,7 @@ class ChessBoard{
         }
     }
 }
-class AI{
-    constructor(color){
-        this.color = color
-    }
-    play(){
-        const pieces = chessBoard.pieces.filter(p => p.color == this.color)
-        const movePieces = []
-        for(let i=0; i<pieces.length; i++){
-            const poss = Piece.ifCheck(pieces[i],0,ChessBoard.getPossibilities(pieces[i]))
-            if(poss.length>0){
-                movePieces.push(pieces[i])
-            }
-        }
-        const chosenPiece = movePieces[Math.round(Math.random()*(movePieces.length-1))]
-        const possibilities = Piece.ifCheck(chosenPiece,0,ChessBoard.getPossibilities(chosenPiece))
-        const chosenMove = possibilities[Math.round(Math.random()*(possibilities.length-1))]
-        chosenPiece.pos = chosenMove
-        const colors = ['white','black']
-        chessBoard.turn = colors.find(c => c != this.color)
-        if(chessBoard.check == this.color){
-            chessBoard.check = undefined
-        }
-        if(chosenPiece.name == 'Pawn' && chosenPiece.moved == false){
-            if(JSON.parse(chosenPiece.pos.slice(1,2)) == 5 || JSON.parse(chosenPiece.pos.slice(1,2)) == 4){
-                chosenPiece.enPassant = true
-            }
-        }
-        const p = chessBoard.pieces.find(p => p.pos == chosenMove && p.color != this.color)
-        if(p != undefined){
-            chessBoard.pieces.splice(chessBoard.pieces.findIndex(p1 => p1 == p),1)
-        }
-        if(chosenPiece.name == 'Pawn' && JSON.parse(chosenPiece.pos.slice(1,2)) == 8-colors.findIndex(c => c == this.color)*7){
-            chosenPiece.name = 'Queen'
-        }
-        if(chosenPiece.name == 'King' && chosenPiece.moved == false){
-            const nums = [1,8]
-            for(let i=0; i<2; i++){
-                if(chosenPiece.pos == 'g'+JSON.stringify(nums[i])){
-                    const piece = this.pieces.find(p => p.pos == 'h'+JSON.stringify(nums[i]))
-                    piece.pos = 'f'+JSON.stringify(nums[i])
-                    piece.moved = true
-                }
-                if(chosenPiece.pos == 'c'+JSON.stringify(nums[i])){
-                    const piece = this.pieces.find(p => p.pos == 'a'+JSON.stringify(nums[i]))
-                    piece.pos = 'd'+JSON.stringify(nums[i])
-                    piece.moved = true
-                }
-            }
-        }
-        chosenPiece.moved = true
-        chessBoard.check = Piece.ifCheck(chessBoard.pieces.find(pi => pi.name == 'King' && pi.color != this.color))
-        if(chessBoard.check != undefined){
-            chessBoard.checkmate = Piece.ifCheckmate(colors.find(c => c != this.color))
-        }
-
-    }
-}
-const chessBoard = new ChessBoard(1)
+const chessBoard = new ChessBoard()
 function mainLoop(){
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0,0,900,900)
