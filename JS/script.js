@@ -461,7 +461,7 @@ class ChessBoard{
                     this.checkmate = Piece.ifCheckmate(this.check)
                 }
                 this.selectedPiece = undefined
-                if(this.turn == computer.color && this.checkmate == undefined && this.players == 1){
+                if(this.turn == this.Ais[1].color && this.checkmate == undefined && this.players == 1){
                     setTimeout(() => {
                         this.AIs[1].play()
                     },1000)
