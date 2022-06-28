@@ -37,8 +37,9 @@ class Piece{
             for(let i=1; i<=vs[l][0]; i++){
                 if(piece.moved == false){
                     const p = chessBoard.pieces.find(p => p.pos == chessBoard.letters[index+i*vs[l][1]]+num)
+                    const check = Piece.ifCheck(new King(chessBoard.letters[index+i*vs[l][1]]+num,piece.color),1,undefined,false)
                     if(i<vs[l][0]){
-                        if(p != undefined){
+                        if(p != undefined || check == undefined){
                             i = 10
                         }
                     }
@@ -159,7 +160,7 @@ class Piece{
         }
         return openSquares
     }
-    static ifCheck(piece,which=1,openSquares=undefined){
+    static ifCheck(piece,which=1,openSquares=undefined,king=true){
         const c = piece.color
         if(which == 0){
             const os = openSquares
@@ -193,7 +194,7 @@ class Piece{
             const opPieces = chessBoard.pieces.filter(p => p.color != c)
             const os = []
             for(let i=0; i<opPieces.length; i++){
-                ChessBoard.getPossibilities(opPieces[i]).filter(s => os.push(s))
+                ChessBoard.getPossibilities(opPieces[i],king).filter(s => os.push(s))
             }
             for(let i=0; i<os.length; i++){
                 if(os[i] == piece.pos){
@@ -348,8 +349,7 @@ class ChessBoard{
         }
         this.possibilities = []
         if(this.selectedPiece != undefined && this.turn == this.selectedPiece.color){
-            this.possibilities = ChessBoard.getPossibilities(this.selectedPiece)
-            this.possibilities = Piece.ifCheck(this.selectedPiece,0,this.possibilities)
+            this.possibilities = Piece.ifCheck(this.selectedPiece,0,ChessBoard.getPossibilities(this.selectedPiece))
         }
         if(this.checkmate != undefined){
             ctx.fillStyle = '#000000'
@@ -452,9 +452,9 @@ class ChessBoard{
             return letter+number
         }
     }
-    static getPossibilities(piece){
+    static getPossibilities(piece,king=true){
         const possibilities = []
-        if(piece.name == 'King'){
+        if(piece.name == 'King' && king == true){
             Piece.K(piece).filter(s => possibilities.push(s))
         }
         if(piece.name == 'Pawn'){
