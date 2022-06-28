@@ -43,7 +43,7 @@ class Piece{
                         }
                     }
                     else{
-                        if(p != undefined && p.moved == false){
+                        if(p != undefined && p.moved == false && piece.color != chessBoard.check){
                             openSquares.push(chessBoard.letters[index+2*vs[l][1]]+num)
                         }
                     }
@@ -193,22 +193,7 @@ class Piece{
             const opPieces = chessBoard.pieces.filter(p => p.color != c)
             const os = []
             for(let i=0; i<opPieces.length; i++){
-                const p = opPieces[i]
-                if(p.name == 'King'){
-                    Piece.K(p).filter(s => os.push(s))
-                }
-                if(p.name == 'Pawn'){
-                    Piece.P(p).filter(s => os.push(s))
-                }
-                if(p.name == 'Knight'){
-                    Piece.N(p).filter(s => os.push(s))
-                }
-                if(p.name == 'Bishop' || p.name == 'Queen'){
-                    Piece.D(p).filter(s => os.push(s))
-                }
-                if(p.name == 'Rook' || p.name == 'Queen'){
-                    Piece.VH(p).filter(s => os.push(s))
-                }
+                ChessBoard.getPossibilities(opPieces[i]).filter(s => os.push(s))
             }
             for(let i=0; i<os.length; i++){
                 if(os[i] == piece.pos){
@@ -219,31 +204,10 @@ class Piece{
         return undefined
     }
     static ifCheckmate(color){
-        const king = chessBoard.pieces.find(p => p.name == 'King' && p.color == color)
         const pieces = chessBoard.pieces.filter(p => p.color == color)
         const openSquares = []
         for(let i=0; i<pieces.length; i++){
-            const p = pieces[i]
-            const os = []
-            if(p.name == 'King'){
-                Piece.K(p).filter(s => os.push(s))
-            }
-            if(p.name == 'Pawn'){
-                Piece.P(p).filter(s => os.push(s))
-            }
-            if(p.name == 'Knight'){
-                Piece.N(p).filter(s => os.push(s))
-            }
-            if(p.name == 'Bishop' || p.name == 'Queen'){
-                Piece.D(p).filter(s => os.push(s))
-            }
-            if(p.name == 'Rook' || p.name == 'Queen'){
-                Piece.VH(p).filter(s => os.push(s))
-            }
-            const os1 = Piece.ifCheck(p,0,os)
-            for(let r=0; r<os1.length; r++){
-                openSquares.push(os1[r])
-            }
+            Piece.ifCheck(pieces[i],0,ChessBoard.getPossibilities(pieces[i])).filter(s => openSquares.push(s))
         }
         if(openSquares.length == 0){
             return color
@@ -384,22 +348,7 @@ class ChessBoard{
         }
         this.possibilities = []
         if(this.selectedPiece != undefined && this.turn == this.selectedPiece.color){
-            const p = this.selectedPiece
-            if(p.name == 'King'){
-                Piece.K(p).filter(s => this.possibilities.push(s))
-            }
-            if(p.name == 'Pawn'){
-                Piece.P(p).filter(s => this.possibilities.push(s))
-            }
-            if(p.name == 'Knight'){
-                Piece.N(p).filter(s => this.possibilities.push(s))
-            }
-            if(p.name == 'Bishop' || p.name == 'Queen'){
-                Piece.D(p).filter(s => this.possibilities.push(s))
-            }
-            if(p.name == 'Rook' || p.name == 'Queen'){
-                Piece.VH(p).filter(s => this.possibilities.push(s))
-            }
+            this.possibilities = ChessBoard.getPossibilities(this.selectedPiece)
             this.possibilities = Piece.ifCheck(this.selectedPiece,0,this.possibilities)
         }
         if(this.checkmate != undefined){
@@ -502,6 +451,25 @@ class ChessBoard{
             const number = JSON.stringify(this.numbers[pos.row])
             return letter+number
         }
+    }
+    static getPossibilities(piece){
+        const possibilities = []
+        if(piece.name == 'King'){
+            Piece.K(piece).filter(s => possibilities.push(s))
+        }
+        if(piece.name == 'Pawn'){
+            Piece.P(piece).filter(s => possibilities.push(s))
+        }
+        if(piece.name == 'Knight'){
+            Piece.N(piece).filter(s => possibilities.push(s))
+        }
+        if(piece.name == 'Bishop' || piece.name == 'Queen'){
+            Piece.D(piece).filter(s => possibilities.push(s))
+        }
+        if(piece.name == 'Rook' || piece.name == 'Queen'){
+            Piece.VH(piece).filter(s => possibilities.push(s))
+        }
+        return possibilities
     }
 }
 const chessBoard = new ChessBoard()
