@@ -218,6 +218,39 @@ class Piece{
         }
         return undefined
     }
+    static ifCheckmate(color){
+        const king = chessBoard.pieces.find(p => p.name == 'King' && p.color == color)
+        const pieces = chessBoard.pieces.filter(p => p.color == color)
+        const openSquares = []
+        for(let i=0; i<pieces.length; i++){
+            const p = pieces[i]
+            const os = []
+            if(p.name == 'King'){
+                Piece.K(p).filter(s => os.push(s))
+            }
+            if(p.name == 'Pawn'){
+                Piece.P(p).filter(s => os.push(s))
+            }
+            if(p.name == 'Knight'){
+                Piece.N(p).filter(s => os.push(s))
+            }
+            if(p.name == 'Bishop' || p.name == 'Queen'){
+                Piece.D(p).filter(s => os.push(s))
+            }
+            if(p.name == 'Rook' || p.name == 'Queen'){
+                Piece.VH(p).filter(s => os.push(s))
+            }
+            const os1 = Piece.ifCheck(p,0,os)
+            for(let r=0; r<os1.length; r++){
+                openSquares.push(os1[r])
+            }
+        }
+        if(openSquares.length == 0){
+            return color
+        }
+        return undefined
+
+    }
 }
 class Pawn extends Piece{
     constructor(pos,color){
@@ -261,6 +294,7 @@ class ChessBoard{
         this.check = undefined
         this.turn = 'white'
         this.possibilities = []
+        this.checkmate = undefined
         ctx.lineWidth = 2
         this.x = 50
         this.y = 50
@@ -309,6 +343,7 @@ class ChessBoard{
         }
         for(let i=0; i<8; i++){
             ctx.fillStyle = '#000000'
+            ctx.font = '10px sans-serif'
             ctx.fillText(this.letters[i],this.x+(i+1)*this.width/8-10,this.y+this.height-5)
             ctx.fillText(this.numbers[i],this.x+5,this.y+10+i*this.height/8)
         }
@@ -367,6 +402,13 @@ class ChessBoard{
             }
             this.possibilities = Piece.ifCheck(this.selectedPiece,0,this.possibilities)
         }
+        if(this.checkmate != undefined){
+            ctx.fillStyle = '#000000'
+            ctx.font = '36px Arial'
+            const colors = ['white','black']
+            const width = ctx.measureText('Checkmate! '+colors.find(c => c != this.checkmate)+' wins!').width
+            ctx.fillText('Checkmate! '+colors.find(c => c != this.checkmate)+' wins!',450-width/2,40)
+        }
     }
     wasClicked(e){
         const x = e.pageX-10
@@ -407,6 +449,10 @@ class ChessBoard{
                     if(p != undefined && p.enPassant == true){
                         chessBoard.pieces.splice(chessBoard.pieces.findIndex(p2 => p2 == p),1)
                     }
+                    const num = JSON.parse(p1.pos.slice(1,2))-7*colors.findIndex(c => c == p1.color)
+                    if(num == 8 || num == 1){
+                        p1.name = 'Queen'
+                    }
                 }
                 this.pieces.filter(p => p.name == 'Pawn').enPassant = false
                 if(this.selectedPiece.name == 'Pawn' && this.selectedPiece.moved == false){
@@ -433,6 +479,9 @@ class ChessBoard{
                     this.turn = 'white'
                 }
                 this.check = Piece.ifCheck(this.pieces.find(p => p.name == 'King' && p.color == this.turn))
+                if(this.check != undefined){
+                    this.checkmate = Piece.ifCheckmate(this.check)
+                }
             }
             else{
                 this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
