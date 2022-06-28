@@ -39,7 +39,7 @@ class Piece{
                     const p = chessBoard.pieces.find(p => p.pos == chessBoard.letters[index+i*vs[l][1]]+num)
                     const check = Piece.ifCheck(new King(chessBoard.letters[index+i*vs[l][1]]+num,piece.color),1,undefined,false)
                     if(i<vs[l][0]){
-                        if(p != undefined || check == undefined){
+                        if(p != undefined || check != undefined){
                             i = 10
                         }
                     }
@@ -57,15 +57,19 @@ class Piece{
         let l = 1
         const openSquares = []
         const colors = ['white','black']
-        if(piece.moved == false){
-            l = 2
+        const pos = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+1-colors.findIndex(c => c == piece.color)*2)
+        if(chessBoard.squares.find(s => s == pos)){
+            const p = chessBoard.pieces.find(p => p.pos == pos)
+            if(p == undefined){
+                openSquares.push(pos)
+            }
         }
-        for(let i=1; i<l+1; i++){
-            const pos = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+i-colors.findIndex(c => c == piece.color)*i*2)
-            if(chessBoard.squares.find(s => s == pos)){
-                const p = chessBoard.pieces.find(p => p.pos == pos)
-                if(p == undefined){
-                    openSquares.push(pos)
+        if(piece.moved == false && openSquares.find(p => p == pos)){
+            const pos1 = piece.pos.slice(0,1)+JSON.stringify(JSON.parse(piece.pos.slice(1,2))+2-colors.findIndex(c => c == piece.color)*4)
+            if(chessBoard.squares.find(s => s == pos1)){
+                const p1 = chessBoard.pieces.find(p => p.pos == pos1)
+                if(p1 == undefined){
+                    openSquares.push(pos1)
                 }
             }
         }
@@ -255,7 +259,48 @@ class Rook extends Piece{
     }
 }
 class ChessBoard{
-    constructor(){
+    constructor(players=1){
+        this.AIs = [new AI('white'), new AI('black')]
+        this.players = players
+        this.blackWins = 0
+        this.whiteWins = 0
+        this.stalemates = 0
+        if(players == 0){
+            setInterval(() => {
+                if(chessBoard.checkmate == undefined){
+                    try{
+                        if(chessBoard.turn == 'white'){
+                            chessBoard.AIs[0].play()
+                        }
+                        else{
+                            chessBoard.AIs[1].play()
+                        }
+                    }
+                    catch{
+                        chessBoard.stalemates += 1
+                        chessBoard.createPieces()
+                    }
+                    if(chessBoard.pieces.length == 2){
+                        chessBoard.stalemates += 1
+                        chessBoard.createPieces()
+                    }
+                }
+                else{
+                    if(chessBoard.check == 'white'){
+                        chessBoard.whiteWins += 1
+                    }
+                    else{
+                        chessBoard.blackWins += 1
+                    }
+                    chessBoard.createPieces()
+                    chessBoard.checkmate = undefined
+                    chessBoard.check = undefined
+                }
+            },150)
+            setInterval(() => {
+                console.log('Wins: '+Math.round(chessBoard.whiteWins+chessBoard.blackWins)+' -- Black: '+chessBoard.blackWins+'  White: '+chessBoard.whiteWins+'   Stalemates: '+chessBoard.stalemates)
+            },5000)
+        }
         this.check = undefined
         this.turn = 'white'
         this.possibilities = []
@@ -276,23 +321,7 @@ class ChessBoard{
         this.numbers = [8,7,6,5,4,3,2,1]
         this.point = []
         this.selectedPiece = undefined
-        this.pieces = []
-        for(let i=0; i<8; i++){
-            this.pieces.push(new Pawn(this.letters[i]+JSON.stringify(2),'white'))
-            this.pieces.push(new Pawn(this.letters[i]+JSON.stringify(7),'black'))
-        }
-        const colors = ['white','black']
-        for(let i=0; i<2; i++){
-            for(let c=0; c<2; c++){
-                this.pieces.push(new Rook(this.letters[0+i*7]+JSON.stringify(1+c*7),colors[c]))
-                this.pieces.push(new Knight(this.letters[1+i*5]+JSON.stringify(1+c*7),colors[c]))
-                this.pieces.push(new Bishop(this.letters[2+i*3]+JSON.stringify(1+c*7),colors[c]))
-            }
-        }
-        for(let i=0; i<2; i++){
-            this.pieces.push(new King('e'+JSON.stringify(1+i*7),colors[i]))
-            this.pieces.push(new Queen('d'+JSON.stringify(1+i*7),colors[i]))
-        }
+        this.createPieces()
     }
     draw(){
         for(let row=1; row<=8; row++){
@@ -431,6 +460,12 @@ class ChessBoard{
                 if(this.check != undefined){
                     this.checkmate = Piece.ifCheckmate(this.check)
                 }
+                this.selectedPiece = undefined
+                if(this.turn == computer.color && this.checkmate == undefined && this.players == 1){
+                    setTimeout(() => {
+                        this.AIs[1].play()
+                    },1000)
+                }
             }
             else{
                 this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
@@ -471,8 +506,84 @@ class ChessBoard{
         }
         return possibilities
     }
+    createPieces(){
+        this.pieces = []
+        for(let i=0; i<8; i++){
+            this.pieces.push(new Pawn(this.letters[i]+JSON.stringify(2),'white'))
+            this.pieces.push(new Pawn(this.letters[i]+JSON.stringify(7),'black'))
+        }
+        const colors = ['white','black']
+        for(let i=0; i<2; i++){
+            for(let c=0; c<2; c++){
+                this.pieces.push(new Rook(this.letters[0+i*7]+JSON.stringify(1+c*7),colors[c]))
+                this.pieces.push(new Knight(this.letters[1+i*5]+JSON.stringify(1+c*7),colors[c]))
+                this.pieces.push(new Bishop(this.letters[2+i*3]+JSON.stringify(1+c*7),colors[c]))
+            }
+        }
+        for(let i=0; i<2; i++){
+            this.pieces.push(new King('e'+JSON.stringify(1+i*7),colors[i]))
+            this.pieces.push(new Queen('d'+JSON.stringify(1+i*7),colors[i]))
+        }
+    }
 }
-const chessBoard = new ChessBoard()
+class AI{
+    constructor(color){
+        this.color = color
+    }
+    play(){
+        const pieces = chessBoard.pieces.filter(p => p.color == this.color)
+        const movePieces = []
+        for(let i=0; i<pieces.length; i++){
+            const poss = Piece.ifCheck(pieces[i],0,ChessBoard.getPossibilities(pieces[i]))
+            if(poss.length>0){
+                movePieces.push(pieces[i])
+            }
+        }
+        const chosenPiece = movePieces[Math.round(Math.random()*(movePieces.length-1))]
+        const possibilities = Piece.ifCheck(chosenPiece,0,ChessBoard.getPossibilities(chosenPiece))
+        const chosenMove = possibilities[Math.round(Math.random()*(possibilities.length-1))]
+        chosenPiece.pos = chosenMove
+        const colors = ['white','black']
+        chessBoard.turn = colors.find(c => c != this.color)
+        if(chessBoard.check == this.color){
+            chessBoard.check = undefined
+        }
+        if(chosenPiece.name == 'Pawn' && chosenPiece.moved == false){
+            if(JSON.parse(chosenPiece.pos.slice(1,2)) == 5 || JSON.parse(chosenPiece.pos.slice(1,2)) == 4){
+                chosenPiece.enPassant = true
+            }
+        }
+        const p = chessBoard.pieces.find(p => p.pos == chosenMove && p.color != this.color)
+        if(p != undefined){
+            chessBoard.pieces.splice(chessBoard.pieces.findIndex(p1 => p1 == p),1)
+        }
+        if(chosenPiece.name == 'Pawn' && JSON.parse(chosenPiece.pos.slice(1,2)) == 8-colors.findIndex(c => c == this.color)*7){
+            chosenPiece.name = 'Queen'
+        }
+        if(chosenPiece.name == 'King' && chosenPiece.moved == false){
+            const nums = [1,8]
+            for(let i=0; i<2; i++){
+                if(chosenPiece.pos == 'g'+JSON.stringify(nums[i])){
+                    const piece = this.pieces.find(p => p.pos == 'h'+JSON.stringify(nums[i]))
+                    piece.pos = 'f'+JSON.stringify(nums[i])
+                    piece.moved = true
+                }
+                if(chosenPiece.pos == 'c'+JSON.stringify(nums[i])){
+                    const piece = this.pieces.find(p => p.pos == 'a'+JSON.stringify(nums[i]))
+                    piece.pos = 'd'+JSON.stringify(nums[i])
+                    piece.moved = true
+                }
+            }
+        }
+        chosenPiece.moved = true
+        chessBoard.check = Piece.ifCheck(chessBoard.pieces.find(pi => pi.name == 'King' && pi.color != this.color))
+        if(chessBoard.check != undefined){
+            chessBoard.checkmate = Piece.ifCheckmate(colors.find(c => c != this.color))
+        }
+
+    }
+}
+const chessBoard = new ChessBoard(1)
 function mainLoop(){
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0,0,900,900)
