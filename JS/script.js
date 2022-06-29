@@ -261,6 +261,8 @@ class Rook extends Piece{
 class ChessBoard{
     constructor(players=1){
         this.players = players
+        this.computerB = new AI('black')
+        this.computerW = new AI('white')
         this.check = undefined
         this.turn = 'white'
         this.possibilities = []
@@ -421,6 +423,11 @@ class ChessBoard{
                     this.checkmate = Piece.ifCheckmate(this.check)
                 }
                 this.selectedPiece = undefined
+                if(this.players == 1 && this.turn == 'black' && this.checkmate == undefined){
+                    setTimeout(() => {
+                        chessBoard.computerB.play()
+                    },500)
+                }
             }
             else{
                 this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
@@ -479,6 +486,31 @@ class ChessBoard{
             this.pieces.push(new King('e'+JSON.stringify(1+i*7),colors[i]))
             this.pieces.push(new Queen('d'+JSON.stringify(1+i*7),colors[i]))
         }
+    }
+}
+class AI{
+    constructor(color){
+        this.color = color
+    }
+    play(){
+        const pieces = chessBoard.pieces.filter(p => p.color == this.color && Piece.ifCheck(p,0,ChessBoard.getPossibilities(p)).length>0)
+        const chosenPiece = pieces[Math.round(Math.random()*(pieces.length-1))]
+        const poss = Piece.ifCheck(chosenPiece,0,ChessBoard.getPossibilities(chosenPiece))
+        const chosenMove = poss[Math.round(Math.random()*(poss.length-1))]
+        const pos1 = chessBoard.convert(chosenPiece.pos,0)
+        const pos2 = chessBoard.convert(chosenMove,0)
+        const e = {
+            pageX: chessBoard.x+pos1.col*chessBoard.width/8+chessBoard.width/16+10,
+            pageY: chessBoard.y+pos1.row*chessBoard.height/8+chessBoard.height/16+10
+        }
+        chessBoard.wasClicked(e)
+        setTimeout(() => {
+            const e = {
+                pageX: chessBoard.x+pos2.col*chessBoard.width/8+chessBoard.width/16+10,
+                pageY: chessBoard.y+pos2.row*chessBoard.height/8+chessBoard.height/16+10
+            }
+            chessBoard.wasClicked(e)
+        },500)
     }
 }
 const chessBoard = new ChessBoard()
