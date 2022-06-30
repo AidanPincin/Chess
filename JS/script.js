@@ -206,7 +206,6 @@ class Piece{
                 }
             }
         }
-        return undefined
     }
     static ifCheckmate(color){
         const pieces = chessBoard.pieces.filter(p => p.color == color)
@@ -217,8 +216,6 @@ class Piece{
         if(openSquares.length == 0){
             return color
         }
-        return undefined
-
     }
 }
 class Pawn extends Piece{
@@ -260,12 +257,14 @@ class Rook extends Piece{
 }
 class ChessBoard{
     constructor(players=1){
+        this.moves = 0
         this.players = players
         this.computerB = new AI('black')
         this.computerW = new AI('white')
         this.check = undefined
         this.turn = 'white'
         this.possibilities = []
+        this.stalemate = false
         this.checkmate = undefined
         ctx.lineWidth = 2
         this.x = 50
@@ -284,6 +283,11 @@ class ChessBoard{
         this.point = []
         this.selectedPiece = undefined
         this.createPieces()
+        if(this.players == 0){
+            setTimeout(() => {
+                chessBoard.computerW.play()
+            },2000)
+        }
     }
     draw(){
         for(let row=1; row<=8; row++){
@@ -349,92 +353,117 @@ class ChessBoard{
             const width = ctx.measureText('Checkmate! '+colors.find(c => c != this.checkmate)+' wins!').width
             ctx.fillText('Checkmate! '+colors.find(c => c != this.checkmate)+' wins!',450-width/2,40)
         }
+        if(this.stalemate == true){
+            ctx.fillStyle = '#000000'
+            ctx.font = '36px Arial'
+            const width = ctx.measureText('Stalemate!').width
+            ctx.fillText('Stalemate!',450-width/2,40)
+        }
     }
     wasClicked(e){
-        const x = e.pageX-10
-        const y = e.pageY-10
-        const row = Math.round((x-this.x-this.width/16)/(this.width/8))
-        const col = Math.round((y-this.y-this.height/16)/(this.height/8))
-        if(row>=0 && row<=7 && col>=0 && col<=7){
-            this.point = [this.x+row*this.width/8,this.y+col*this.height/8]
-        }
-        if(this.selectedPiece == undefined){
-            this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
-        }
-        else if(this.selectedPiece.color == this.turn){
-            const pos = this.convert({ row: col, col: row },1)
-            const ifMoved = this.possibilities.find(p => p == pos)
-            if(ifMoved != undefined){
-                this.selectedPiece.pos = ifMoved
-                this.possibilities = []
-                if(this.selectedPiece.name == 'King' && this.selectedPiece.moved == false){
-                    const nums = [1,8]
-                    for(let i=0; i<2; i++){
-                        if(ifMoved == 'g'+JSON.stringify(nums[i])){
-                            const piece = this.pieces.find(p => p.pos == 'h'+JSON.stringify(nums[i]))
-                            piece.pos = 'f'+JSON.stringify(nums[i])
-                            piece.moved = true
+        if((e.type == undefined && ((this.players == 1 && this.turn == 'black') || this.players == 0)) || (e.type == 'mousedown' && ((this.players == 1 && this.turn == 'white') || this.players == 2))){
+            const x = e.pageX-10
+            const y = e.pageY-10
+            const row = Math.round((x-this.x-this.width/16)/(this.width/8))
+            const col = Math.round((y-this.y-this.height/16)/(this.height/8))
+            if(row>=0 && row<=7 && col>=0 && col<=7){
+                this.point = [this.x+row*this.width/8,this.y+col*this.height/8]
+            }
+            if(this.selectedPiece == undefined){
+                this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
+            }
+            else if(this.selectedPiece.color == this.turn){
+                const pos = this.convert({ row: col, col: row },1)
+                const ifMoved = this.possibilities.find(p => p == pos)
+                if(ifMoved != undefined){
+                    let takenPiece = false
+                    const savedPos = JSON.stringify(this.selectedPiece.pos)
+                    this.moves += 1
+                    this.selectedPiece.pos = ifMoved
+                    this.possibilities = []
+                    if(this.selectedPiece.name == 'King' && this.selectedPiece.moved == false){
+                        const nums = [1,8]
+                        for(let i=0; i<2; i++){
+                            if(ifMoved == 'g'+JSON.stringify(nums[i])){
+                                const piece = this.pieces.find(p => p.pos == 'h'+JSON.stringify(nums[i]))
+                                piece.pos = 'f'+JSON.stringify(nums[i])
+                                piece.moved = true
+                            }
+                            if(ifMoved == 'c'+JSON.stringify(nums[i])){
+                                const piece = this.pieces.find(p => p.pos == 'a'+JSON.stringify(nums[i]))
+                                piece.pos = 'd'+JSON.stringify(nums[i])
+                                piece.moved = true
+                            }
                         }
-                        if(ifMoved == 'c'+JSON.stringify(nums[i])){
-                            const piece = this.pieces.find(p => p.pos == 'a'+JSON.stringify(nums[i]))
-                            piece.pos = 'd'+JSON.stringify(nums[i])
-                            piece.moved = true
+                    }
+                    if(this.selectedPiece.name == 'Pawn'){
+                        const colors = ['white','black']
+                        const p1 = this.selectedPiece
+                        const p = this.pieces.find(p => p.color != p1.color && p.pos == p1.pos.slice(0,1)+JSON.stringify(JSON.parse(p1.pos.slice(1,2))+1-2*colors.findIndex(c => c == p.color)))
+                        if(p != undefined && p.enPassant == true){
+                            this.pieces.splice(this.pieces.findIndex(p2 => p2 == p),1)
+                            takenPiece = true
+                        }
+                        const num = JSON.parse(p1.pos.slice(1,2))
+                        if(num == 8 || num == 1){
+                            p1.name = 'Queen'
                         }
                     }
-                }
-                if(this.selectedPiece.name == 'Pawn'){
-                    const colors = ['white','black']
-                    const p1 = this.selectedPiece
-                    const p = chessBoard.pieces.find(p => p.color != p1.color && p.pos == p1.pos.slice(0,1)+JSON.stringify(JSON.parse(p1.pos.slice(1,2))+1-2*colors.findIndex(c => c == p.color)))
-                    if(p != undefined && p.enPassant == true){
-                        chessBoard.pieces.splice(chessBoard.pieces.findIndex(p2 => p2 == p),1)
+                    const oldEnPassants = this.pieces.filter(p => p.name == 'Pawn' && p.enPassant == true)
+                    for(let h=0; h<oldEnPassants.length; h++){
+                        oldEnPassants[h].enPassant = false
                     }
-                    const num = JSON.parse(p1.pos.slice(1,2))-7*colors.findIndex(c => c == p1.color)
-                    if(num == 8 || num == 1){
-                        p1.name = 'Queen'
+                    if(this.selectedPiece.name == 'Pawn' && this.selectedPiece.moved == false){
+                        if((this.selectedPiece.color == 'white' && JSON.parse(this.selectedPiece.pos.slice(1,2)) == 4) || (this.selectedPiece.color == 'black' && JSON.parse(this.selectedPiece.pos.slice(1,2)) == 5)){
+                            this.selectedPiece.enPassant = true
+                        }
+                        
                     }
-                }
-                this.pieces.filter(p => p.name == 'Pawn').enPassant = false
-                if(this.selectedPiece.name == 'Pawn' && this.selectedPiece.moved == false){
-                    if((this.selectedPiece.color == 'white' && JSON.parse(this.selectedPiece.pos.slice(1,2)) == 4) || (this.selectedPiece.color == 'black' && JSON.parse(this.selectedPiece.pos.slice(1,2)) == 5)){
-                        this.selectedPiece.enPassant = true
+                    this.selectedPiece.moved = true
+                    if(this.pieces.find(p => p.pos == this.selectedPiece.pos && p != this.selectedPiece)){
+                        const index = this.pieces.findIndex(p => p.pos == this.selectedPiece.pos && p != this.selectedPiece)
+                        this.pieces.splice(index,1)
+                        takenPiece = true
                     }
-                    
-                }
-                this.selectedPiece.moved = true
-                if(this.pieces.find(p => p.pos == this.selectedPiece.pos && p != this.selectedPiece)){
-                    const index = this.pieces.findIndex(p => p.pos == this.selectedPiece.pos && p != this.selectedPiece)
-                    this.pieces.splice(index,1)
-                }
-                if(this.turn == 'white'){
-                    if(this.check == 'white'){
-                        this.check = undefined
+                    if(this.turn == 'white'){
+                        if(this.check == 'white'){
+                            this.check = undefined
+                        }
+                        this.turn = 'black'
                     }
-                    this.turn = 'black'
+                    else{
+                        if(this.check == 'black'){
+                            this.check = undefined
+                        }
+                        this.turn = 'white'
+                    }
+                    this.check = Piece.ifCheck(this.pieces.find(p => p.name == 'King' && p.color == this.turn))
+                    if(this.check != undefined){
+                        this.checkmate = Piece.ifCheckmate(this.check)
+                    }
+                    if(this.check == undefined && this.checkmate == undefined){
+                        this.stalemate = this.ifStalemate()
+                    }
+                    if(this.players < 2 && this.turn == 'black' && this.checkmate == undefined && this.stalemate == false){
+                        setTimeout(() => {
+                            chessBoard.computerB.play()
+                        },250)
+                    }
+                    if(this.players == 0 && this.turn == 'white' && this.checkmate == undefined && this.stalemate == false){
+                        setTimeout(() => {
+                            chessBoard.computerW.play()
+                        },250)
+                    }
+                    this.recordMove(this.selectedPiece,JSON.parse(savedPos),takenPiece)
+                    this.selectedPiece = undefined
                 }
                 else{
-                    if(this.check == 'black'){
-                        this.check = undefined
-                    }
-                    this.turn = 'white'
-                }
-                this.check = Piece.ifCheck(this.pieces.find(p => p.name == 'King' && p.color == this.turn))
-                if(this.check != undefined){
-                    this.checkmate = Piece.ifCheckmate(this.check)
-                }
-                this.selectedPiece = undefined
-                if(this.players == 1 && this.turn == 'black' && this.checkmate == undefined){
-                    setTimeout(() => {
-                        chessBoard.computerB.play()
-                    },500)
+                    this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
                 }
             }
             else{
                 this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
             }
-        }
-        else{
-            this.selectedPiece = this.pieces.find(p => p.pos == this.convert({ row: col, col: row },1))
         }
     }
     convert(pos,which){
@@ -487,30 +516,67 @@ class ChessBoard{
             this.pieces.push(new Queen('d'+JSON.stringify(1+i*7),colors[i]))
         }
     }
+    ifStalemate(){
+        if(this.pieces.length == 2){
+            return true
+        }
+        if(this.pieces.length == 3 && this.pieces.find(p => p.name == 'Knight' || p.name == 'Bishop')){
+            return true
+        }
+        return false
+    }
+    recordMove(piece,pos,takenPiece=false){
+        let string = piece.name.slice(0,1)
+        if(string == 'P'){
+            string = ''
+        }
+        if(string == 'K' && piece.name == 'Knight'){
+            string = 'N'
+        }
+        if(takenPiece == true){
+            if(string == ''){
+                string = pos.slice(0,1)
+            }
+            string += 'x'+piece.pos
+        }
+        else{
+            string += piece.pos
+        }
+        console.log(string)
+    }
 }
 class AI{
     constructor(color){
         this.color = color
     }
-    play(){
+    play(pos=undefined){
         const pieces = chessBoard.pieces.filter(p => p.color == this.color && Piece.ifCheck(p,0,ChessBoard.getPossibilities(p)).length>0)
         const chosenPiece = pieces[Math.round(Math.random()*(pieces.length-1))]
-        const poss = Piece.ifCheck(chosenPiece,0,ChessBoard.getPossibilities(chosenPiece))
-        const chosenMove = poss[Math.round(Math.random()*(poss.length-1))]
-        const pos1 = chessBoard.convert(chosenPiece.pos,0)
-        const pos2 = chessBoard.convert(chosenMove,0)
-        const e = {
-            pageX: chessBoard.x+pos1.col*chessBoard.width/8+chessBoard.width/16+10,
-            pageY: chessBoard.y+pos1.row*chessBoard.height/8+chessBoard.height/16+10
+        if(chosenPiece == undefined){
+            chessBoard.stalemate = true
         }
-        chessBoard.wasClicked(e)
-        setTimeout(() => {
+        else{
+            const poss = Piece.ifCheck(chosenPiece,0,ChessBoard.getPossibilities(chosenPiece))
+            const chosenMove = poss[Math.round(Math.random()*(poss.length-1))]
+            let pos1 = chessBoard.convert(chosenPiece.pos,0)
+            let pos2 = chessBoard.convert(chosenMove,0)
+            if(pos != undefined){
+                pos1 = pos[0]
+                pos2 = pos[1]
+            }
             const e = {
-                pageX: chessBoard.x+pos2.col*chessBoard.width/8+chessBoard.width/16+10,
-                pageY: chessBoard.y+pos2.row*chessBoard.height/8+chessBoard.height/16+10
+                pageX: chessBoard.x+pos1.col*chessBoard.width/8+chessBoard.width/16+10,
+                pageY: chessBoard.y+pos1.row*chessBoard.height/8+chessBoard.height/16+10
             }
             chessBoard.wasClicked(e)
-        },500)
+            setTimeout(() => {
+                const e = {
+                    pageX: chessBoard.x+pos2.col*chessBoard.width/8+chessBoard.width/16+10,
+                    pageY: chessBoard.y+pos2.row*chessBoard.height/8+chessBoard.height/16+10
+                }
+                chessBoard.wasClicked(e)
+            },1000)
+        }
     }
 }
 const chessBoard = new ChessBoard()
