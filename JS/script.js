@@ -185,10 +185,11 @@ class Piece{
                 piece.pos = JSON.parse(savedPos)
                 if(p1 != undefined){
                     const p2 = JSON.parse(savedPiece)
-                    const { name: n, pos: pos, moved: m, color: c } = p2
+                    const { name: n, pos: pos, moved: m, color: c, pointValue: pv } = p2
                     const p3 = new Piece(pos,c)
                     p3.name = n
                     p3.moved = m
+                    p3.pointValue = pv
                     chessBoard.pieces.push(p3)
                 }
             }
@@ -223,41 +224,47 @@ class Pawn extends Piece{
         super(pos,color)
         this.name = 'Pawn'
         this.enPassant = false
+        this.pointValue = 1
     }
 }
 class Bishop extends Piece{
     constructor(pos,color){
         super(pos,color)
         this.name = 'Bishop'
+        this.pointValue = 3.25
     }
 }
 class Knight extends Piece{
     constructor(pos,color){
         super(pos,color)
         this.name = 'Knight'
+        this.pointValue = 3
     }
 }
 class Queen extends Piece{
     constructor(pos,color){
         super(pos,color)
         this.name = 'Queen'
+        this.pointValue = 9
     }
 }
 class King extends Piece{
     constructor(pos,color){
         super(pos,color)
         this.name = 'King'
+        this.pointValue = 100
     }
 }
 class Rook extends Piece{
     constructor(pos,color){
         super(pos,color)
         this.name = 'Rook'
+        this.pointValue = 5
     }
 }
 class ChessBoard{
     constructor(players=1){
-        this.moves = 0
+        this.moves = []
         this.players = players
         this.computerB = new AI('black')
         this.computerW = new AI('white')
@@ -306,6 +313,19 @@ class ChessBoard{
             ctx.font = '10px sans-serif'
             ctx.fillText(this.letters[i],this.x+(i+1)*this.width/8-10,this.y+this.height-5)
             ctx.fillText(this.numbers[i],this.x+5,this.y+10+i*this.height/8)
+        }
+        const whiteMoves = this.moves.filter(array => array[1] == 0)
+        const blackMoves = this.moves.filter(array => array[1] == 1)
+        ctx.font = '24px Arial'
+        for(let i=0; i<blackMoves.length+1; i++){
+            ctx.fillText(JSON.stringify(i+1)+'.',950,50+i*33)
+        }
+        for(let i=0; i<whiteMoves.length; i++){
+            ctx.fillText(whiteMoves[i][0],990,50+i*33)
+        }
+        for(let i=0; i<blackMoves.length; i++){
+            const width = ctx.measureText(whiteMoves[i]).width
+            ctx.fillText(blackMoves[i][0],990+width,50+i*33)
         }
         if(this.check != undefined){
             const piece = this.pieces.find(p => p.name == 'King' && p.color == this.check)
@@ -377,8 +397,8 @@ class ChessBoard{
                 const ifMoved = this.possibilities.find(p => p == pos)
                 if(ifMoved != undefined){
                     let takenPiece = false
+                    let castle = false
                     const savedPos = JSON.stringify(this.selectedPiece.pos)
-                    this.moves += 1
                     this.selectedPiece.pos = ifMoved
                     this.possibilities = []
                     if(this.selectedPiece.name == 'King' && this.selectedPiece.moved == false){
@@ -388,11 +408,13 @@ class ChessBoard{
                                 const piece = this.pieces.find(p => p.pos == 'h'+JSON.stringify(nums[i]))
                                 piece.pos = 'f'+JSON.stringify(nums[i])
                                 piece.moved = true
+                                castle = true
                             }
                             if(ifMoved == 'c'+JSON.stringify(nums[i])){
                                 const piece = this.pieces.find(p => p.pos == 'a'+JSON.stringify(nums[i]))
                                 piece.pos = 'd'+JSON.stringify(nums[i])
                                 piece.moved = true
+                                castle = true
                             }
                         }
                     }
@@ -454,7 +476,8 @@ class ChessBoard{
                             chessBoard.computerW.play()
                         },250)
                     }
-                    this.recordMove(this.selectedPiece,JSON.parse(savedPos),takenPiece)
+                    const colors = ['white','black']
+                    this.moves.push([this.recordMove(this.selectedPiece,JSON.parse(savedPos),takenPiece,castle),colors.findIndex(c => c != this.turn)])
                     this.selectedPiece = undefined
                 }
                 else{
@@ -525,7 +548,7 @@ class ChessBoard{
         }
         return false
     }
-    recordMove(piece,pos,takenPiece=false){
+    recordMove(piece,pos,takenPiece=false,castle=false){
         let string = piece.name.slice(0,1)
         if(string == 'P'){
             string = ''
@@ -533,6 +556,23 @@ class ChessBoard{
         if(string == 'K' && piece.name == 'Knight'){
             string = 'N'
         }
+        const savedPos = JSON.stringify(piece.pos)
+        piece.pos = pos
+        if(piece.name != 'Pawn'){
+            const samePiece = this.pieces.find(p => p.name == piece.name && p != piece && p.color == piece.color)
+            if(samePiece != undefined){
+                const poss = ChessBoard.getPossibilities(samePiece)
+                if(poss.find(p => p == JSON.parse(savedPos))){
+                    if(samePiece.pos.slice(0,1) != piece.pos.slice(0,1)){
+                        string += pos.slice(0,1)
+                    }
+                    else{
+                        string += pos.slice(1,2)
+                    }
+                }
+            }
+        }
+        piece.pos = JSON.parse(savedPos)
         if(takenPiece == true){
             if(string == ''){
                 string = pos.slice(0,1)
@@ -542,28 +582,58 @@ class ChessBoard{
         else{
             string += piece.pos
         }
-        console.log(string)
+        if(castle == true){
+            if(piece.pos.slice(0,1) == 'g'){
+                string = '0-0'
+            }
+            if(piece.pos.slice(0,1) == 'c'){
+                string = '0-0-0'
+            }
+        }
+        if(this.checkmate != undefined){
+            string += '#'
+        }
+        else if(this.check != undefined){
+            string += '+'
+        }
+        return string
     }
 }
 class AI{
     constructor(color){
         this.color = color
     }
-    play(pos=undefined){
+    play(){
         const pieces = chessBoard.pieces.filter(p => p.color == this.color && Piece.ifCheck(p,0,ChessBoard.getPossibilities(p)).length>0)
-        const chosenPiece = pieces[Math.round(Math.random()*(pieces.length-1))]
+        let chosenMove = undefined
+        let chosenPiece = undefined
+        for(let i=0; i<pieces.length; i++){
+            const poss = Piece.ifCheck(pieces[i],0,ChessBoard.getPossibilities(pieces[i]))
+            for(let r=0; r<poss.length; r++){
+                const ep = chessBoard.pieces.find(p => p.pos == poss[r])
+                console.log(pieces[i].pointValue,ep)
+                if(ep != undefined){
+                    console.log(ep.pointValue)
+                }
+                if(ep != undefined && ep.pointValue>pieces[i].pointValue){
+                    chosenPiece = pieces[i]
+                    chosenMove = poss[r]
+                }
+            }
+        }
+        if(chosenPiece == undefined){
+            chosenPiece = pieces[Math.round(Math.random()*(pieces.length-1))]
+        }
         if(chosenPiece == undefined){
             chessBoard.stalemate = true
         }
         else{
             const poss = Piece.ifCheck(chosenPiece,0,ChessBoard.getPossibilities(chosenPiece))
-            const chosenMove = poss[Math.round(Math.random()*(poss.length-1))]
+            if(chosenMove == undefined){
+                chosenMove = poss[Math.round(Math.random()*(poss.length-1))]
+            }
             let pos1 = chessBoard.convert(chosenPiece.pos,0)
             let pos2 = chessBoard.convert(chosenMove,0)
-            if(pos != undefined){
-                pos1 = pos[0]
-                pos2 = pos[1]
-            }
             const e = {
                 pageX: chessBoard.x+pos1.col*chessBoard.width/8+chessBoard.width/16+10,
                 pageY: chessBoard.y+pos1.row*chessBoard.height/8+chessBoard.height/16+10
@@ -582,7 +652,7 @@ class AI{
 const chessBoard = new ChessBoard()
 function mainLoop(){
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0,0,900,900)
+    ctx.fillRect(0,0,1200,900)
     chessBoard.draw()
     requestAnimationFrame(mainLoop)
 }
