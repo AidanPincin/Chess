@@ -106,7 +106,7 @@ const pieceMoves = {
         if(moveHistory.length>0){
             const info = JSON.parse(moveHistory[moveHistory.length-1].piece)
             pos = { row: piece.pos.row+1-index*2, col: info.pos.col }
-            if(piece.pos.row == 4-index && moveHistory[moveHistory.length-1].pos2.row == 4-index && info.name == 'Pawn' && info.pos.row == 6-index*5 && (check == false || ifCheck(piece,pos,moveHistory,state) == false)){
+            if(piece.pos.row == 4-index && moveHistory[moveHistory.length-1].pos2.row == 4-index && Math.abs(info.pos.col-piece.pos.col) == 1 && info.name == 'Pawn' && info.pos.row == 6-index*5 && (check == false || ifCheck(piece,pos,moveHistory,state) == false)){
                 moves.push(pos)
             }
         }
@@ -135,7 +135,7 @@ const pieceMoves = {
         return moves
     },
 }
-class RecordMove{
+export class RecordMove{
     constructor(piece,pos2,state){
         this.piece = JSON.stringify(piece)
         this.pos2 = pos2
@@ -237,3 +237,13 @@ export function checkPos(pos1,pos2){
 export function movePiece(piece,movePos,state,moveHistory){
     move[piece.name](piece,movePos,state,moveHistory)
 }   
+export function ifCheckmate(state,moveHistory,turn){
+    const pieces = state.filter(p => p.color == turn)
+    for(let i=0; i<pieces.length; i++){
+        const moves = getMoves(pieces[i],state,moveHistory)
+        if(moves.length>0){
+            return false
+        }
+    }
+    return true
+}
