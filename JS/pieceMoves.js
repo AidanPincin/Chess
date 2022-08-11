@@ -193,6 +193,10 @@ const move = {
             index = state.findIndex(p => p.pos.row == piece.pos.row && p.pos.col == moveHistory[moveHistory.length-2].pos2.col)
             state.splice(index,1)
         }
+        if(movePos.row == ['white','black'].findIndex(c => piece.color == c)*7){
+            piece.name = 'Queen'
+            piece.updatePiece('Queen')
+        }
         piece.pos = movePos
     },
     'Rook': function(piece,movePos,state,moveHistory){
