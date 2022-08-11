@@ -1,5 +1,5 @@
 import { grabImage } from "./images.js"
-import { getMoves, checkPos, movePiece } from "./pieceMoves.js"
+import { getMoves, checkPos, movePiece, ifCheckmate, RecordMove } from "./pieceMoves.js"
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 canvas.height = window.document.defaultView.innerHeight-20
@@ -112,31 +112,88 @@ class ChessBoard{
         return { row: 100, col: 100 }
     }
     wasClicked(e){
-        const x = e.pageX-10
-        const y = e.pageY-10
-        const pos = this.getPos(x,y)
-        if(this.selectedPiece != undefined){
-            const moves = getMoves(this.selectedPiece,this.pieces,this.moveHistory)
-            if(moves.find(move => checkPos(move,pos))){
-                if(this.turn == 'black'){
-                    this.turn = 'white'
+        if(e.which == undefined || this.turn != bot.color){
+            const x = e.pageX-10
+            const y = e.pageY-10
+            const pos = this.getPos(x,y)
+            if(this.selectedPiece != undefined){
+                const moves = getMoves(this.selectedPiece,this.pieces,this.moveHistory)
+                if(moves.find(move => checkPos(move,pos))){
+                    if(this.turn == 'black'){
+                        this.turn = 'white'
+                    }
+                    else{
+                        this.turn = 'black'
+                        setTimeout(() => {bot.play(this.pieces,this.moveHistory)},1000)
+                    }
+                    movePiece(this.selectedPiece,pos,this.pieces,this.moveHistory)
+                    this.selectedPiece = undefined
+                    const checkmate = ifCheckmate(this.pieces,this.moveHistory,this.turn)
+                    if(checkmate == true){
+                        alert(['white','black'].find(c => c != this.turn)+' wins!')
+                    }
                 }
                 else{
-                    this.turn = 'black'
+                    this.selectedPiece = this.pieces.find(p => checkPos(pos,p.pos) && p.color == this.turn)
                 }
-                movePiece(this.selectedPiece,pos,this.pieces,this.moveHistory)
-                this.selectedPiece = undefined
             }
             else{
-                this.selectedPiece = this.pieces.find(p => checkPos(pos,p.pos) && p.color == this.turn)
+                this.selectedPiece = this.pieces.find(p => p.color == this.turn && checkPos(pos,p.pos))
             }
         }
-        else{
-            this.selectedPiece = this.pieces.find(p => p.color == this.turn && checkPos(pos,p.pos))
+    }
+}
+class Bot{
+    constructor(color){
+        this.color = color
+    }
+    play(state,moveHistory){
+        let moved = false
+        const pieces = state.filter(p => p.color == this.color)
+        const movablePieces = []
+        const { x:x, y:y, w:w, h:h } = chessBoard
+        loop:
+        for(let i=0; i<pieces.length; i++){
+            const moves = getMoves(pieces[i],state,moveHistory)
+            if(moves.length>0){
+                movablePieces.push(pieces[i])
+            }
+            for(let m=0; m<moves.length; m++){
+                const copyState = JSON.parse(JSON.stringify(state))
+                const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
+                copyMoveHistory.push(JSON.parse(JSON.stringify(new RecordMove(pieces[i],moves[m],state))))
+                const index = copyState.findIndex(p => checkPos(p.pos,moves[m]))
+                if(index>=0){
+                    copyState.splice(index,1)
+                }
+                copyState.find(p => checkPos(p.pos,pieces[i].pos)).pos = moves[m]
+                const checkmate = ifCheckmate(copyState,copyMoveHistory,['white','black'].find(c => c != this.color))
+                if(checkmate == true){
+                    let e = { pageX: pieces[i].pos.col*w/8+x+10+w/16, pageY: pieces[i].pos.row*h/8+y+10+h/16 }
+                    chessBoard.wasClicked(e)
+                    setTimeout(() => {
+                        e = { pageX: moves[m].col*w/8+x+10+w/16, pageY: moves[m].row*h/8+y+10+h/16 }
+                        chessBoard.wasClicked(e)
+                    },1000)
+                    moved = true
+                    break loop
+                }
+            }
+        }
+        if(moved == false){
+            const piece = movablePieces[Math.floor(Math.random()*movablePieces.length)]
+            const move = getMoves(piece,state,moveHistory)[Math.floor(Math.random()*getMoves(piece,state,moveHistory).length)]
+            let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
+            chessBoard.wasClicked(e)
+            setTimeout(() => {
+                e = { pageX: move.col*w/8+x+10+w/16, pageY: move.row*h/8+y+10+h/16 }
+                chessBoard.wasClicked(e)
+            },1000)
         }
     }
 }
 const chessBoard = new ChessBoard(size()/16,size()/16,size()*0.875,size()*0.875)
+const bot = new Bot('black')
 function mainLoop(){
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0,0,900,1200)
