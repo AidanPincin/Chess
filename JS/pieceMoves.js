@@ -16,6 +16,9 @@ const pieceMoves = {
                         }
                         moves.push(pos)
                     }
+                    else if(state.find(p => checkPos(p.pos,pos) && p.color != piece.color)){
+                        break
+                    }
                 }
             }
         }
@@ -76,6 +79,9 @@ const pieceMoves = {
                         }
                         moves.push(pos)
                     }
+                    else if(state.find(p => checkPos(p.pos,pos) && p.color != piece.color)){
+                        break
+                    }
                 }
             }
         }
@@ -128,6 +134,9 @@ const pieceMoves = {
                             break
                         }
                         moves.push(pos)
+                    }
+                    else if(state.find(p => checkPos(p.pos,pos) && p.color != piece.color)){
+                        break
                     }
                 }
             }
