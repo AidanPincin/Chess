@@ -4,7 +4,7 @@ const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 canvas.height = window.document.defaultView.innerHeight-20
 canvas.width = window.document.defaultView.innerWidth-20
-const cooldown = 1000
+const cooldown = 100
 function size(){
     let length;
     if(canvas.width>canvas.height){
@@ -199,7 +199,7 @@ class Bot{
         if(moved == false && ifCheckmate(state,moveHistory,this.color) == false){
             const difs = []
             const takeMoves = []
-            movablePieces.filter(m => getMoves(m,state,moveHistory).filter(p => state.filter(t => {if(checkPos(t.pos,p)){takeMoves.push([m,t])}})))
+            movablePieces.filter(m => getMoves(m,state,moveHistory).filter(p => state.filter(t => {if(checkPos(t.pos,p) && this.notTrap(t,p,state,moveHistory)){takeMoves.push([m,t])}})))
             for(let i=0; i<takeMoves.length; i++){
                 const copyState = JSON.parse(JSON.stringify(state))
                 const index = copyState.findIndex(p => checkPos(p.pos,takeMoves[i][1].pos))
@@ -232,7 +232,7 @@ class Bot{
                 const pawns = state.filter(p => p.name == 'Pawn' && p.color == this.color && p.pos.row == 3+['white','black'].findIndex(c => c == this.color))
                 for(let i=0; i<pawns.length; i++){
                     const pos = getMoves(pawns[i],state,moveHistory).find(m => m.col != pawns[i].pos.col)
-                    if(pos != undefined){
+                    if(pos != undefined && this.notTrap(pawns[i],pos,state,moveHistory)){
                         let e = {pageX:x+10+w/16+pawns[i].pos.col*w/8,pageY:y+10+h/16+pawns[i].pos.row*h/8}
                         chessBoard.wasClicked(e)
                         setTimeout(() => {
@@ -246,15 +246,58 @@ class Bot{
             }
         }
         if(moved == false && ifCheckmate(state,moveHistory,this.color) == false){
-            const piece = movablePieces[Math.round(Math.random()*(movablePieces.length-1))]
-            const move = getMoves(piece,state,moveHistory)[Math.floor(Math.random()*getMoves(piece,state,moveHistory).length)]
-            let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
-            chessBoard.wasClicked(e)
-            setTimeout(() => {
-                e = { pageX: move.col*w/8+x+10+w/16, pageY: move.row*h/8+y+10+h/16 }
+            const ms = []
+            for(let i=0; i<movablePieces.length; i++){
+                const moves = getMoves(movablePieces[i],state,moveHistory)
+                for(let r=0; r<moves.length; r++){
+                    if(this.notTrap(movablePieces[i],moves[r],state,moveHistory)){
+                        ms.push([movablePieces[i],moves[r]])
+                    }
+                }
+            }
+            if(ms.length == 0){
+                const piece = movablePieces[Math.round(Math.random()*(movablePieces.length-1))]
+                const move = getMoves(piece,state,moveHistory)[Math.floor(Math.random()*getMoves(piece,state,moveHistory).length)]
+                let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
                 chessBoard.wasClicked(e)
-            },cooldown)
+                setTimeout(() => {
+                    e = { pageX: move.col*w/8+x+10+w/16, pageY: move.row*h/8+y+10+h/16 }
+                    chessBoard.wasClicked(e)
+                },cooldown)
+            }
+            else{
+                const chosen = ms[Math.round(Math.random()*(ms.length-1))]
+                const piece = chosen[0]
+                const move = chosen[1]
+                let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
+                chessBoard.wasClicked(e)
+                setTimeout(() => {
+                    e = { pageX: move.col*w/8+x+10+w/16, pageY: move.row*h/8+y+10+h/16 }
+                    chessBoard.wasClicked(e)
+                },cooldown)
+                console.log(getMoves(piece,state,moveHistory))
+            }
         }
+    }
+    notTrap(piece,move,state,moveHistory){
+        const copyState = JSON.parse(JSON.stringify(state))
+        const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
+        copyState.find(p => checkPos(p.pos,piece.pos)).pos = move
+        copyMoveHistory.push(new RecordMove(piece,move,state))
+        const opPieces = copyState.filter(p => p.color != this.color)
+        for(let i=0; i<opPieces.length; i++){
+            const moves = getMoves(opPieces[i],copyState,copyMoveHistory)
+            for(let r=0; r<moves.length; r++){
+                const copyS = JSON.parse(JSON.stringify(copyState))
+                const copyM = JSON.parse(JSON.stringify(copyMoveHistory))
+                copyS.find(p => checkPos(p.pos,opPieces[i].pos)).pos = moves[r]
+                copyM.push(new RecordMove(opPieces[i],moves[r],copyS))
+                if(ifCheckmate(copyS,copyM,this.color) == true){
+                    return false
+                }
+            }
+        }
+        return true
     }
 }
 const chessBoard = new ChessBoard(size()/16,size()/16,size()*0.875,size()*0.875)
