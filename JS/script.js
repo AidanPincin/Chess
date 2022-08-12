@@ -4,7 +4,7 @@ const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 canvas.height = window.document.defaultView.innerHeight-20
 canvas.width = window.document.defaultView.innerWidth-20
-const cooldown = 750
+const cooldown = 1000
 function size(){
     let length;
     if(canvas.width>canvas.height){
@@ -95,10 +95,6 @@ class ChessBoard{
         const pieces = []
         const colors = ['black','white']
         const pieceNames = ['Rook','Knight','Bishop']
-        for(let col=0; col<8; col++){
-            pieces.push(new Piece('black','Pawn',{row: 1, col: col}))
-            pieces.push(new Piece('white','Pawn',{row: 6, col: col}))
-        }
         for(let color=0; color<2; color++){
             pieces.push(new Piece(colors[color],'Queen',{row: color*7, col: 3}))
             pieces.push(new Piece(colors[color],'King',{row: color*7, col: 4}))
@@ -107,6 +103,10 @@ class ChessBoard{
                     pieces.push(new Piece(colors[color],pieceNames[name],{row: color*7, col: name+col*(7-name*2)}))
                 }
             }
+        }
+        for(let col=0; col<8; col++){
+            pieces.push(new Piece('black','Pawn',{row: 1, col: col}))
+            pieces.push(new Piece('white','Pawn',{row: 6, col: col}))
         }
         return pieces
     }
@@ -228,9 +228,25 @@ class Bot{
                 },cooldown)
                 moved = true
             }
+            else{
+                const pawns = state.filter(p => p.name == 'Pawn' && p.color == this.color && p.pos.row == 3+['white','black'].findIndex(c => c == this.color))
+                for(let i=0; i<pawns.length; i++){
+                    const pos = getMoves(pawns[i],state,moveHistory).find(m => m.col != pawns[i].pos.col)
+                    if(pos != undefined){
+                        let e = {pageX:x+10+w/16+pawns[i].pos.col*w/8,pageY:y+10+h/16+pawns[i].pos.row*h/8}
+                        chessBoard.wasClicked(e)
+                        setTimeout(() => {
+                            e = {pageX:x+10+w/16+pos.col*w/8,pageY:y+10+h/16+pos.row*h/8}
+                            chessBoard.wasClicked(e)
+                        },cooldown)
+                        moved = true
+                        break
+                    }
+                }
+            }
         }
         if(moved == false && ifCheckmate(state,moveHistory,this.color) == false){
-            const piece = movablePieces[Math.floor(Math.random()*movablePieces.length)]
+            const piece = movablePieces[Math.round(Math.random()*(movablePieces.length-1))]
             const move = getMoves(piece,state,moveHistory)[Math.floor(Math.random()*getMoves(piece,state,moveHistory).length)]
             let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
             chessBoard.wasClicked(e)
