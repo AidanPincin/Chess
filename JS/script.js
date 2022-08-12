@@ -197,22 +197,35 @@ class Bot{
             }
         }
         if(moved == false && ifCheckmate(state,moveHistory,this.color) == false){
-            const tMoves = []
             const difs = []
-            for(let i=0; i<movablePieces.length; i++){
-                const moves = getMoves(movablePieces[i],state,moveHistory)
-                for(let m=0; m<moves.length; m++){
-                    const opPiece = state.find(p => checkPos(moves[m],p.pos))
-                    if(opPiece != undefined && opPiece.value>=movablePieces[i].value){
-                        difs.push(opPiece.value-movablePieces[i].value)
-                        tMoves.push([{pageX:movablePieces[i].pos.col*w/8+x+10+w/16,pageY:movablePieces[i].pos.row*h/8+y+10+h/16},{pageX:opPiece.pos.col*w/8+x+10+w/16,pageY:opPiece.pos.row*h/8+y+10+h/16}])
-                    }
+            const takeMoves = []
+            movablePieces.filter(m => getMoves(m,state,moveHistory).filter(p => state.filter(t => {if(checkPos(t.pos,p)){takeMoves.push([m,t])}})))
+            for(let i=0; i<takeMoves.length; i++){
+                const copyState = JSON.parse(JSON.stringify(state))
+                const index = copyState.findIndex(p => checkPos(p.pos,takeMoves[i][1].pos))
+                if(index>=0){
+                    copyState.splice(index,1)
+                }
+                copyState.find(p => checkPos(p.pos,takeMoves[i][0].pos)).pos = takeMoves[i][1].pos
+                const opPieces = copyState.filter(p => p.color != this.color)
+                const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
+                copyMoveHistory.push(new RecordMove(takeMoves[i][0],takeMoves[i][1].pos,copyState))
+                if(opPieces.find(p => getMoves(p,copyState,copyMoveHistory).find(m => checkPos(m,takeMoves[i][1].pos)))){
+                    difs.push(takeMoves[i][1].value-takeMoves[i][0].value)
+                }
+                else{
+                    difs.push(takeMoves[i][1].value)
                 }
             }
-            if(difs.length>0){
-                const index = difs.findIndex(d => d == Math.max(...difs))
-                chessBoard.wasClicked(tMoves[index][0])
-                setTimeout(() => {chessBoard.wasClicked(tMoves[index][1])},cooldown)
+            const index = difs.findIndex(d => d == Math.max(...difs))
+            const info = takeMoves[index]
+            if(Math.max(...difs)>=0){
+                let e = {pageX:x+10+w/16+info[0].pos.col*w/8,pageY:y+10+h/16+info[0].pos.row*h/8}
+                chessBoard.wasClicked(e)
+                setTimeout(() => {
+                    e = {pageX:x+10+w/16+info[1].pos.col*w/8,pageY:y+10+h/16+info[1].pos.row*h/8}
+                    chessBoard.wasClicked(e)
+                },cooldown)
                 moved = true
             }
         }
