@@ -184,6 +184,7 @@ class Bot{
                 movePiece(piece,getMoves(piece,state,moveHistory)[0],state,moveHistory)
             }
         }
+        chessBoard.turn = ['white','black'].find(c => c != this.color)
     }
     findMateIn1(state,moveHistory,turn){
         const opPieces = state.filter(p => p.color == turn)
