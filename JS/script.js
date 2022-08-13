@@ -176,9 +176,15 @@ class Bot{
         }
         else{
             const moves = this.eliminateBadMoves(state,moveHistory,this.color)
-            const piece = moves[Math.round(Math.random()*(moves.length-1))]
-            const move = piece.moves[Math.round(Math.random()*(piece.moves.length-1))]
-            movePiece(piece,move,state,moveHistory)
+            if(moves.length>0){
+                const piece = moves[Math.round(Math.random()*(moves.length-1))]
+                const move = piece.moves[Math.round(Math.random()*(piece.moves.length-1))]
+                movePiece(piece,move,state,moveHistory)
+            }
+            else{
+                const piece = state.find(p => p.color == this.color && getMoves(p,state,moveHistory).length>0)
+                movePiece(piece,getMoves(piece,state,moveHistory)[0],state,moveHistory)
+            }
         }
     }
     findMateIn1(state,moveHistory,turn){
