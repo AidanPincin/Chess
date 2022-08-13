@@ -108,8 +108,6 @@ class ChessBoard{
             pieces.push(new Piece('black','Pawn',{row: 1, col: col}))
             pieces.push(new Piece('white','Pawn',{row: 6, col: col}))
         }
-        pieces.push(new Piece('white','Bishop',{row:5,col:1}))
-        pieces.push(new Piece('white','Queen',{row:5,col:5}))
         return pieces
     }
     update(){
