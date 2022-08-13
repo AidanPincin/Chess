@@ -108,6 +108,8 @@ class ChessBoard{
             pieces.push(new Piece('black','Pawn',{row: 1, col: col}))
             pieces.push(new Piece('white','Pawn',{row: 6, col: col}))
         }
+        pieces.push(new Piece('white','Bishop',{row:5,col:1}))
+        pieces.push(new Piece('white','Queen',{row:5,col:5}))
         return pieces
     }
     update(){
@@ -164,140 +166,64 @@ class Bot{
         this.color = color
     }
     play(state,moveHistory){
-        let moved = false
-        const pieces = state.filter(p => p.color == this.color)
-        const movablePieces = []
-        const { x:x, y:y, w:w, h:h } = chessBoard
-        loop:
-        for(let i=0; i<pieces.length; i++){
-            const moves = getMoves(pieces[i],state,moveHistory)
-            if(moves.length>0){
-                movablePieces.push(pieces[i])
-            }
-            for(let m=0; m<moves.length; m++){
-                const copyState = JSON.parse(JSON.stringify(state))
-                const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
-                copyMoveHistory.push(JSON.parse(JSON.stringify(new RecordMove(pieces[i],moves[m],state))))
-                const index = copyState.findIndex(p => checkPos(p.pos,moves[m]))
-                if(index>=0){
-                    copyState.splice(index,1)
-                }
-                copyState.find(p => checkPos(p.pos,pieces[i].pos)).pos = moves[m]
-                const checkmate = ifCheckmate(copyState,copyMoveHistory,['white','black'].find(c => c != this.color))
-                if(checkmate == true){
-                    let e = { pageX: pieces[i].pos.col*w/8+x+10+w/16, pageY: pieces[i].pos.row*h/8+y+10+h/16 }
-                    chessBoard.wasClicked(e)
-                    setTimeout(() => {
-                        e = { pageX: moves[m].col*w/8+x+10+w/16, pageY: moves[m].row*h/8+y+10+h/16 }
-                        chessBoard.wasClicked(e)
-                    },cooldown)
-                    moved = true
-                    break loop
-                }
-            }
+        const {x:X,y:Y,w:w,h:h} = chessBoard
+        const x = X+10+w/16
+        const y = Y+10+h/16
+        let move = this.findMateIn1(state,moveHistory,this.color)
+        if(move != undefined){
+            movePiece(move,move.moveTo,state,moveHistory)
+            setTimeout(() => {alert(this.color+' wins!')},100)
         }
-        if(moved == false && ifCheckmate(state,moveHistory,this.color) == false){
-            const difs = []
-            const takeMoves = []
-            movablePieces.filter(m => getMoves(m,state,moveHistory).filter(p => state.filter(t => {if(checkPos(t.pos,p) && this.notTrap(t,p,state,moveHistory)){takeMoves.push([m,t])}})))
-            for(let i=0; i<takeMoves.length; i++){
-                const copyState = JSON.parse(JSON.stringify(state))
-                const index = copyState.findIndex(p => checkPos(p.pos,takeMoves[i][1].pos))
-                if(index>=0){
-                    copyState.splice(index,1)
-                }
-                copyState.find(p => checkPos(p.pos,takeMoves[i][0].pos)).pos = takeMoves[i][1].pos
-                const opPieces = copyState.filter(p => p.color != this.color)
-                const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
-                copyMoveHistory.push(new RecordMove(takeMoves[i][0],takeMoves[i][1].pos,copyState))
-                if(opPieces.find(p => getMoves(p,copyState,copyMoveHistory).find(m => checkPos(m,takeMoves[i][1].pos)))){
-                    difs.push(takeMoves[i][1].value-takeMoves[i][0].value)
-                }
-                else{
-                    difs.push(takeMoves[i][1].value)
-                }
-            }
-            const index = difs.findIndex(d => d == Math.max(...difs))
-            const info = takeMoves[index]
-            if(Math.max(...difs)>=0){
-                let e = {pageX:x+10+w/16+info[0].pos.col*w/8,pageY:y+10+h/16+info[0].pos.row*h/8}
-                chessBoard.wasClicked(e)
-                setTimeout(() => {
-                    e = {pageX:x+10+w/16+info[1].pos.col*w/8,pageY:y+10+h/16+info[1].pos.row*h/8}
-                    chessBoard.wasClicked(e)
-                },cooldown)
-                moved = true
-            }
-            else{
-                const pawns = state.filter(p => p.name == 'Pawn' && p.color == this.color && p.pos.row == 3+['white','black'].findIndex(c => c == this.color))
-                for(let i=0; i<pawns.length; i++){
-                    const pos = getMoves(pawns[i],state,moveHistory).find(m => m.col != pawns[i].pos.col)
-                    if(pos != undefined && this.notTrap(pawns[i],pos,state,moveHistory)){
-                        let e = {pageX:x+10+w/16+pawns[i].pos.col*w/8,pageY:y+10+h/16+pawns[i].pos.row*h/8}
-                        chessBoard.wasClicked(e)
-                        setTimeout(() => {
-                            e = {pageX:x+10+w/16+pos.col*w/8,pageY:y+10+h/16+pos.row*h/8}
-                            chessBoard.wasClicked(e)
-                        },cooldown)
-                        moved = true
-                        break
-                    }
-                }
-            }
-        }
-        if(moved == false && ifCheckmate(state,moveHistory,this.color) == false){
-            const ms = []
-            for(let i=0; i<movablePieces.length; i++){
-                const moves = getMoves(movablePieces[i],state,moveHistory)
-                for(let r=0; r<moves.length; r++){
-                    if(this.notTrap(movablePieces[i],moves[r],state,moveHistory)){
-                        ms.push([movablePieces[i],moves[r]])
-                    }
-                }
-            }
-            if(ms.length == 0){
-                const piece = movablePieces[Math.round(Math.random()*(movablePieces.length-1))]
-                const move = getMoves(piece,state,moveHistory)[Math.floor(Math.random()*getMoves(piece,state,moveHistory).length)]
-                let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
-                chessBoard.wasClicked(e)
-                setTimeout(() => {
-                    e = { pageX: move.col*w/8+x+10+w/16, pageY: move.row*h/8+y+10+h/16 }
-                    chessBoard.wasClicked(e)
-                },cooldown)
-            }
-            else{
-                const chosen = ms[Math.round(Math.random()*(ms.length-1))]
-                const piece = chosen[0]
-                const move = chosen[1]
-                let e = { pageX: piece.pos.col*w/8+x+10+w/16, pageY: piece.pos.row*h/8+y+10+h/16 }
-                chessBoard.wasClicked(e)
-                setTimeout(() => {
-                    e = { pageX: move.col*w/8+x+10+w/16, pageY: move.row*h/8+y+10+h/16 }
-                    chessBoard.wasClicked(e)
-                },cooldown)
-                console.log(getMoves(piece,state,moveHistory))
-            }
+        else{
+            const moves = this.eliminateBadMoves(state,moveHistory,this.color)
+            const piece = moves[Math.round(Math.random()*(moves.length-1))]
+            const move = piece.moves[Math.round(Math.random()*(piece.moves.length-1))]
+            movePiece(piece,move,state,moveHistory)
         }
     }
-    notTrap(piece,move,state,moveHistory){
-        const copyState = JSON.parse(JSON.stringify(state))
-        const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
-        copyState.find(p => checkPos(p.pos,piece.pos)).pos = move
-        copyMoveHistory.push(new RecordMove(piece,move,state))
-        const opPieces = copyState.filter(p => p.color != this.color)
-        for(let i=0; i<opPieces.length; i++){
-            const moves = getMoves(opPieces[i],copyState,copyMoveHistory)
-            for(let r=0; r<moves.length; r++){
-                const copyS = JSON.parse(JSON.stringify(copyState))
-                const copyM = JSON.parse(JSON.stringify(copyMoveHistory))
-                copyS.find(p => checkPos(p.pos,opPieces[i].pos)).pos = moves[r]
-                copyM.push(new RecordMove(opPieces[i],moves[r],copyS))
-                if(ifCheckmate(copyS,copyM,this.color) == true){
-                    return false
+    findMateIn1(state,moveHistory,turn){
+        const opPieces = state.filter(p => p.color == turn)
+        const move = opPieces.find(p => getMoves(p,state,moveHistory).find(m => {
+            const copyState = JSON.parse(JSON.stringify(state))
+            const index = copyState.findIndex(r => checkPos(m,r.pos))
+            const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
+            copyMoveHistory.push(new RecordMove(p,m,state))
+            if(index>=0){
+                copyState.splice(index,1)
+            }
+            copyState.find(r => checkPos(r.pos,p.pos)).pos = m
+            if(ifCheckmate(copyState,copyMoveHistory,['white','black'].find(c => c != turn))){
+                p.moveTo = m
+                return true
+            }
+        }))
+        return move
+    }
+    findExchanges(state,moveHistory,turn){
+
+    }
+    eliminateBadMoves(state,moveHistory,turn){
+        return state.filter(p => {
+            if(p.color == turn){
+                p.moves = getMoves(p,state,moveHistory)
+                p.moves.filter(m => {
+                    const copyState = JSON.parse(JSON.stringify(state))
+                    const copyMoveHistory = JSON.parse(JSON.stringify(moveHistory))
+                    const index = copyState.findIndex(r => checkPos(r.pos,m))
+                    if(index>=0){
+                        copyState.splice(index,1)
+                    }
+                    copyMoveHistory.push(new RecordMove(p,m,copyState))
+                    copyState.find(r => checkPos(r.pos,p.pos)).pos = m
+                    if(this.findMateIn1(copyState,copyMoveHistory,['white','black'].find(c => c != turn))){
+                        p.moves = p.moves.filter(l => checkPos(l,m) == false)
+                    }
+                })
+                if(p.moves.length>0){
+                    return true
                 }
             }
-        }
-        return true
+        })
     }
 }
 const chessBoard = new ChessBoard(size()/16,size()/16,size()*0.875,size()*0.875)
