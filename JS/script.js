@@ -24,6 +24,7 @@ class Piece{
     }
     update(name){
         this.name = name
+        this.value = values[name]
     }
     moves(state,moveHistory){
         return getMoves(this,state,moveHistory)
@@ -167,20 +168,19 @@ class Bot{
             let move = mate.move
             if(piece == undefined){
                 const moves = this.avoidMate(pieces,state,moveHistory)
-                if(moves.length==0){
+                if(moves.ps.length==0){
                     piece = pieces[Math.round(Math.random()*(pieces.length-1))]
                     move = piece.moves(state,moveHistory)[Math.round(Math.random()*(piece.moves(state,moveHistory).length-1))]
                 }
                 else{
-                    const exchange = this.findEchange(moves,state,moveHistory)
+                    const exchange = this.findEchange(moves.ps,state,moveHistory)
                     if(exchange != undefined){
                         piece = exchange[0]
                         move = exchange[1]
                     }
                     else{
-                        const chosen = moves[Math.round(Math.random()*(moves.length-1))]
-                        piece = chosen[0]
-                        move = chosen[1]
+                        piece = moves.pieces[Math.round(Math.random()*(moves.pieces.length-1))]
+                        move = piece.moves(state,moveHistory)[Math.round(Math.random()*(piece.moves(state,moveHistory).length-1))]
                     }
                 }
             }
@@ -208,6 +208,7 @@ class Bot{
     }
     avoidMate(pieces,state,moveHistory){
         const possibleMoves = []
+        const ps = []
         for(let i=0; i<pieces.length; i++){
             const moves = pieces[i].moves(state,moveHistory)
             for(let m=0; m<moves.length; m++){
@@ -218,10 +219,13 @@ class Bot{
                 copyPiece.pos = moves[m]
                 if(this.findMateIn1(['white','black'].find(c => c != this.color),copyState.filter(p => p.color != this.color && getMoves(p,copyState,copyMoveHistory).length>0),copyState,copyMoveHistory).piece == undefined){
                     possibleMoves.push([pieces[i],moves[m]])
+                    if(ps.find(p => p == pieces[i]) == undefined){
+                        ps.push(pieces[i])
+                    }
                 }
             }
         }
-        return possibleMoves
+        return {ps:possibleMoves,pieces:ps}
     }
     findEchange(moves,state,moveHistory){
         const exchanges = []
