@@ -120,6 +120,7 @@ export function getMoves(piece,state,moveHistory,check=true){
 export function movePiece(piece,pos,state,moveHistory,animate=true){
     moveHistory.push(recordMove(piece,pos))
     const index = state.findIndex(p => checkPos(p.pos,pos))
+    const i = ['black','white'].findIndex(c => c == piece.color)
     if(index>=0){
         state.splice(index,1)
     }
@@ -127,11 +128,13 @@ export function movePiece(piece,pos,state,moveHistory,animate=true){
         state.splice(state.findIndex(p => p.pos.row == piece.pos.row && p.pos.col == pos.col),1)
     }
     if(piece.name == 'King' && Math.abs(piece.pos.col-pos.col) == 2){
-        const i = ['black','white'].findIndex(c => c == piece.color)
         const rook = state.find(p => checkPos(p.pos,{row:i*7,col:Math.round(pos.col/8)*7}))
         if(animate == true){
             rook.move({row:i*7,col:3+2*Math.round(pos.col/8)},state,[])
         }
+    }
+    if(animate == true && piece.name == 'Pawn' && pos.row == 7-i*7){
+        piece.update('Queen')
     }
 }
 export function ifCheck(piece,pos,state,moveHistory){
