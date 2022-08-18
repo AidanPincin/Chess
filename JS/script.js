@@ -235,9 +235,14 @@ class Bot{
                 const value = op.value
                 movePiece(copyPiece,moves[i][1],copyState,copyMoveHistory,false)
                 copyPiece.pos = moves[i][1]
-                if(copyState.find(p => p.color != this.color && getMoves(p,copyState,copyMoveHistory).find(m => checkPos(m,copyPiece.pos)) != undefined) == undefined){
+                const op1 = copyState.find(p => p.color != this.color && getMoves(p,copyState,copyMoveHistory).find(m => checkPos(m,copyPiece.pos)) != undefined)
+                if(op1 == undefined){
                     exchanges.push(moves[i])
                     difs.push(value)
+                }
+                else if(value-copyPiece.value>=0){
+                    exchanges.push(moves[i])
+                    difs.push(value-copyPiece.value)
                 }
             }
         }
