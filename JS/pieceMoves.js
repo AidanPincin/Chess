@@ -74,7 +74,7 @@ export function getMoves(piece,state,moveHistory,check=true){
             const index = ['black','white'].findIndex(c => c == piece.color)
             for(let i=0; i<2; i++){
                 if(moveHistory.find(m => checkPos(m.piece.pos,{row:index*7,col:i*7})) == undefined){
-                    if(state.find(p => state.find(p => checkPos(p.pos,{row:index*7,col:1}) || checkPos(p.pos,{row:index*7,col:2}) || checkPos(p.pos,{row:index*7,col:3})) == undefined && (check == false || ifCheck(piece,{row:index*7,col:2},state,moveHistory) == false && ifCheck(piece,{row:index*7,col:3},state,moveHistory) == false) && i==0){
+                    if(state.find(p => checkPos(p.pos,{row:index*7,col:1}) || checkPos(p.pos,{row:index*7,col:2}) || checkPos(p.pos,{row:index*7,col:3})) == undefined && (check == false || ifCheck(piece,{row:index*7,col:2},state,moveHistory) == false && ifCheck(piece,{row:index*7,col:3},state,moveHistory) == false) && i==0){
                         moves.push({row:index*7,col:2+i*4})
                     }
                     else if(state.find(p => checkPos(p.pos,{row:index*7,col:5}) || checkPos(p.pos,{row:index*7,col:6})) == undefined && (check == false || ifCheck(piece,{row:index*7,col:5},state,moveHistory) == false && ifCheck(piece,{row:index*7,col:6},state,moveHistory) == false) && i==1){
@@ -161,7 +161,18 @@ export function ifCheck(piece,pos,state,moveHistory){
 }
 export function ifCheckmate(color,state,moveHistory){
     const pieces = state.filter(p => p.color == color && getMoves(p,state,moveHistory).length>0)
-    if(pieces.length == 0){
+    const king = state.find(p => p.color == color && p.name == 'King')
+    if(pieces.length == 0 && ifCheck(king,king.pos,state,moveHistory)){
+        return true
+    }
+    else{
+        return false
+    }
+}
+export function ifStaleMate(color,state,moveHistory){
+    const pieces = state.filter(p => p.color == color && getMoves(p,state,moveHistory).length>0)
+    const king = state.find(p => p.color == color && p.name == 'King')
+    if(pieces.length == 0 && ifCheck(king,king.pos,state,moveHistory) == false){
         return true
     }
     else{
