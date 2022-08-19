@@ -1,5 +1,5 @@
 import { grabImage } from "./images.js"
-import { copyObject, getMoves, copyArray, movePiece, checkPos, ifCheck, ifCheckmate , recordMove } from "./pieceMoves.js"
+import { copyObject, getMoves, copyArray, movePiece, checkPos, ifCheck, ifCheckmate , recordMove, ifStaleMate } from "./pieceMoves.js"
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 canvas.height = window.document.defaultView.innerHeight-20
@@ -133,6 +133,9 @@ class Chessboard{
                     if(ifCheckmate(this.turn,this.pieces,this.moveHistory)){
                         alert(['white','black'].find(c => c != this.turn)+' wins!')
                     }
+                    else if(ifStaleMate(this.turn,this.pieces,this.moveHistory)){
+                        alert('Stalemate!')
+                    }
                 },500)
             }
             else{
@@ -168,19 +171,28 @@ class Bot{
             let move = mate.move
             if(piece == undefined){
                 const moves = this.avoidMate(pieces,state,moveHistory)
-                if(moves.ps.length==0){
+                if(moves.length==0){
                     piece = pieces[Math.round(Math.random()*(pieces.length-1))]
                     move = piece.moves(state,moveHistory)[Math.round(Math.random()*(piece.moves(state,moveHistory).length-1))]
                 }
                 else{
-                    const exchange = this.findEchange(moves.ps,state,moveHistory)
+                    const exchange = this.findEchange(moves,state,moveHistory)
                     if(exchange != undefined){
                         piece = exchange[0]
                         move = exchange[1]
                     }
                     else{
-                        piece = moves.pieces[Math.round(Math.random()*(moves.pieces.length-1))]
-                        move = piece.moves(state,moveHistory)[Math.round(Math.random()*(piece.moves(state,moveHistory).length-1))]
+                        const goodMoves = this.eliminateBadMoves(moves,state,moveHistory)
+                        if(goodMoves.length>0){
+                            const chosen = goodMoves[Math.round(Math.random()*(goodMoves.length-1))]
+                            piece = chosen[0]
+                            move = chosen[1]
+                        }
+                        else{
+                            const chosen = moves[Math.round(Math.random()*(moves.length-1))]
+                            piece = chosen[0]
+                            move = chosen[1]
+                        }
                     }
                 }
             }
@@ -208,7 +220,6 @@ class Bot{
     }
     avoidMate(pieces,state,moveHistory){
         const possibleMoves = []
-        const ps = []
         for(let i=0; i<pieces.length; i++){
             const moves = pieces[i].moves(state,moveHistory)
             for(let m=0; m<moves.length; m++){
@@ -219,13 +230,10 @@ class Bot{
                 copyPiece.pos = moves[m]
                 if(this.findMateIn1(['white','black'].find(c => c != this.color),copyState.filter(p => p.color != this.color && getMoves(p,copyState,copyMoveHistory).length>0),copyState,copyMoveHistory).piece == undefined){
                     possibleMoves.push([pieces[i],moves[m]])
-                    if(ps.find(p => p == pieces[i]) == undefined){
-                        ps.push(pieces[i])
-                    }
                 }
             }
         }
-        return {ps:possibleMoves,pieces:ps}
+        return possibleMoves
     }
     findEchange(moves,state,moveHistory){
         const exchanges = []
@@ -256,6 +264,36 @@ class Bot{
         else{
             return undefined
         }
+    }
+    eliminateBadMoves(moves,state,moveHistory){
+        const goodMoves = []
+        for(let i=0; i<moves.length; i++){
+            let defended = false
+            const copyState = copyArray(state)
+            const copyMoveHistory = copyArray(moveHistory)
+            const copyPiece = copyState.find(p => checkPos(p.pos,moves[i][0].pos))
+            if(moves.find(m => checkPos(m[1],moves[i][1]) && m[0] != moves[i][0])){
+                defended = true
+            }
+            movePiece(copyPiece,moves[i][1],copyState,copyMoveHistory,false)
+            copyPiece.pos = moves[i][1]
+            const opPieces = copyState.filter(p => p.color != this.color)
+            const ops = opPieces.filter(p => getMoves(p,copyState,copyMoveHistory).find(m => checkPos(m,moves[i][1])))
+            const values = []
+            ops.forEach(p => {values.push(p.value)})
+            if(ops.length>0){
+                if(defended == true){
+                    const dif = Math.min(...values)-moves[i][0].value
+                    if(dif>=0){
+                        goodMoves.push(moves[i])
+                    }
+                }
+            }
+            else{
+                goodMoves.push(moves[i])
+            }
+        }
+        return goodMoves
     }
 }
 const bot = new Bot('black')
