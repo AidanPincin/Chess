@@ -267,6 +267,32 @@ class Bot{
     }
     eliminateBadMoves(moves,state,moveHistory){
         const goodMoves = []
+        const defendMoves = []
+        const cPieces = state.filter(p => p.color == this.color)
+        for(let i=0; i<cPieces.length; i++){
+            if(this.ifDefended(cPieces[i],state,moveHistory) == false){
+                for(let r=0; r<cPieces.length; r++){
+                    const ms = getMoves(cPieces[r],state,moveHistory)
+                    for(let t=0; t<ms.length; t++){
+                        const copyS = copyArray(state)
+                        const copyM = copyArray(moveHistory)
+                        const copyPiece = copyS.find(p => checkPos(p.pos,cPieces[r].pos))
+                        const copyPiece1 = copyS.find(p => checkPos(p.pos,cPieces[i].pos))
+                        movePiece(copyPiece,ms[t],copyS,copyM)
+                        copyPiece.pos = ms[t]
+                        if(this.ifDefended(copyPiece1,copyS,copyM)){
+                            const move = moves.find(m => checkPos(m[0].pos,cPieces[r].pos) && checkPos(m[1],ms[t]))
+                            if(move != undefined){
+                                defendMoves.push(move)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(defendMoves.length>0){
+            return defendMoves
+        }
         for(let i=0; i<moves.length; i++){
             let defended = false
             const copyState = copyArray(state)
@@ -294,6 +320,28 @@ class Bot{
             }
         }
         return goodMoves
+    }
+    ifDefended(piece,state,moveHistory){
+        const opPieces = state.filter(p => p.color != piece.color)
+        for(let i=0; i<opPieces.length; i++){
+            const moves = getMoves(opPieces[i],state,moveHistory)
+            if(moves.find(m => checkPos(m,piece.pos))){
+                if(opPieces[i].value<piece.value){
+                    return false
+                }
+                else{
+                    const copyS = copyArray(state)
+                    const copyM = copyArray(moveHistory)
+                    const copyPiece = copyS.find(p => checkPos(p.pos,opPieces[i].pos))
+                    movePiece(copyPiece,piece.pos,copyS,copyM)
+                    copyPiece.pos = piece.pos
+                    if(copyS.find(p => getMoves(p,copyS,copyM).find(m => checkPos(m,piece.pos))) == undefined){
+                        return false
+                    }
+                }
+            }
+        }
+        return true
     }
 }
 const bot = new Bot('black')
