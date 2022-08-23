@@ -278,7 +278,7 @@ class Bot{
                         const copyM = copyArray(moveHistory)
                         const copyPiece = copyS.find(p => checkPos(p.pos,cPieces[r].pos))
                         const copyPiece1 = copyS.find(p => checkPos(p.pos,cPieces[i].pos))
-                        movePiece(copyPiece,ms[t],copyS,copyM)
+                        movePiece(copyPiece,ms[t],copyS,copyM,false)
                         copyPiece.pos = ms[t]
                         if(this.ifDefended(copyPiece1,copyS,copyM)){
                             const move = moves.find(m => checkPos(m[0].pos,cPieces[r].pos) && checkPos(m[1],ms[t]))
@@ -333,7 +333,7 @@ class Bot{
                     const copyS = copyArray(state)
                     const copyM = copyArray(moveHistory)
                     const copyPiece = copyS.find(p => checkPos(p.pos,opPieces[i].pos))
-                    movePiece(copyPiece,piece.pos,copyS,copyM)
+                    movePiece(copyPiece,piece.pos,copyS,copyM,false)
                     copyPiece.pos = piece.pos
                     if(copyS.find(p => getMoves(p,copyS,copyM).find(m => checkPos(m,piece.pos))) == undefined){
                         return false
