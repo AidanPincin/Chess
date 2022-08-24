@@ -268,6 +268,7 @@ class Bot{
     eliminateBadMoves(moves,state,moveHistory){
         const goodMoves = []
         const defendMoves = []
+        const betterMoves = []
         const cPieces = state.filter(p => p.color == this.color)
         for(let i=0; i<cPieces.length; i++){
             if(this.ifDefended(cPieces[i],state,moveHistory) == false){
@@ -284,11 +285,17 @@ class Bot{
                             const move = moves.find(m => checkPos(m[0].pos,cPieces[r].pos) && checkPos(m[1],ms[t]))
                             if(move != undefined){
                                 defendMoves.push(move)
+                                if(copyS.find(p => this.ifDefended(p,copyS,copyM) == false) == undefined){
+                                    betterMoves.push(move)
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+        if(betterMoves.length>0){
+            return betterMoves
         }
         if(defendMoves.length>0){
             return defendMoves
@@ -312,14 +319,25 @@ class Bot{
                     const dif = Math.min(...values)-moves[i][0].value
                     if(dif>=0){
                         goodMoves.push(moves[i])
+                        if(copyState.find(p => this.ifDefended(p,copyState,copyMoveHistory) == false) == undefined){
+                            betterMoves.push(moves[i])
+                        }
                     }
                 }
             }
             else{
                 goodMoves.push(moves[i])
+                if(copyState.find(p => this.ifDefended(p,copyState,copyMoveHistory) == false) == undefined){
+                    betterMoves.push(moves[i])
+                }
             }
         }
-        return goodMoves
+        if(betterMoves.length>0){
+            return betterMoves
+        }
+        else{
+            return goodMoves
+        }
     }
     ifDefended(piece,state,moveHistory){
         const opPieces = state.filter(p => p.color != piece.color)
