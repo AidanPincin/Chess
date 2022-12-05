@@ -171,5 +171,8 @@ export function checkmate(color,state){
             return false
         }
     }
-    return true
+    if(check(color,state)){
+        return true
+    }
+    return false
 }
